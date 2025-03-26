@@ -15,7 +15,7 @@ pub struct Player;
 impl Plugin for PlayerPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(OnEnter(GameState::Playing), spawn_player)
-            .add_systems(Update, move_player.run_if(in_state(GameState::Playing)).after(drill));
+            .add_systems(Update, (drill, move_player.run_if(in_state(GameState::Playing)).after(drill)));
     }
 }
 
@@ -67,7 +67,8 @@ fn drill(
     terrain_tiles: Query<(&Transform, Entity), With<Tile>>,
 ) {
     if let Ok(mut transform) = player.get_single() {
-        let to_drill = keyboard_input.get_pressed().fold(transform.translation, |position, key| {
+
+        let to_drill = keyboard_input.get_just_pressed().fold(transform.translation, |position, key| {
             match key {
                 KeyCode::ArrowLeft => Vec3::new(position.x - 1.0, position.y, position.z),
                 KeyCode::ArrowRight => Vec3::new(position.x + 1.0, position.y, position.z),
@@ -75,12 +76,20 @@ fn drill(
                 _ => position,
             }
         });
-        terrain_tiles.iter().filter(|(tile_position, _)| tile_position.translation.x == to_drill.x
-            && tile_position.translation.y == to_drill.y
-            && tile_position.translation.z == to_drill.z)
-            .for_each(|(_, entity)| {
+        println!("player position {0}", transform.translation);
+        println!("to_drill value {to_drill}");
+        terrain_tiles.iter()
+            .filter(|(tile_position, _)| is_in_target(tile_position.translation, to_drill))
+            .for_each(|(tile_pos, entity)| {
+                println!("to despaw {0}", tile_pos.translation);
                 commands.entity(entity).despawn();
             });
+
     }
+}
+
+fn is_in_target(tile_position: Vec3, target: Vec3) -> bool{
+    (tile_position.x - target.x).abs() < 1.0 && (tile_position.y - target.y).abs() < 1.0
+        && (tile_position.z - target.z).abs() < 1.0
 }
 
