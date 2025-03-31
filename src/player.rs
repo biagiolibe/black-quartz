@@ -30,13 +30,13 @@ fn spawn_player(
         Player,
         Sprite {
             color: Color::srgb(0.8, 0.2, 0.2),
-            custom_size: Some(Vec2::new(64.0, 64.0)),
+            custom_size: Some(Vec2::new(TILE_SIZE, TILE_SIZE)),
             ..default()
         },
         Transform::from_xyz(0.0, 50.0, 0.0),
         GlobalTransform::default(),
         RigidBody::Dynamic,
-        Collider::cuboid(32.0, 32.0),
+        Collider::cuboid( TILE_SIZE/2f32, TILE_SIZE/2f32),
         GravityScale(6.0),
         Velocity::zero(),
     ));
@@ -68,27 +68,25 @@ fn drill(
 ) {
     if let Ok(mut transform) = player.get_single() {
 
-        let to_drill = keyboard_input.get_just_pressed().fold(transform.translation, |position, key| {
+        let to_drill = keyboard_input.get_pressed().fold(transform.translation, |position, key| {
             match key {
-                KeyCode::ArrowLeft => Vec3::new(position.x - 1.0, position.y, position.z),
-                KeyCode::ArrowRight => Vec3::new(position.x + 1.0, position.y, position.z),
-                KeyCode::ArrowDown => Vec3::new(position.x, position.y - 1.0, position.z),
+                KeyCode::ArrowLeft => Vec3::new(position.x - TILE_SIZE, position.y, position.z),
+                KeyCode::ArrowRight => Vec3::new(position.x + TILE_SIZE, position.y, position.z),
+                KeyCode::ArrowDown => Vec3::new(position.x, position.y - TILE_SIZE, position.z),
                 _ => position,
             }
         });
-        println!("player position {0}", transform.translation);
-        println!("to_drill value {to_drill}");
+
         terrain_tiles.iter()
             .filter(|(tile_position, _)| is_in_target(tile_position.translation, to_drill))
             .for_each(|(tile_pos, entity)| {
                 println!("to despaw {0}", tile_pos.translation);
                 commands.entity(entity).despawn();
             });
-
     }
 }
 
-fn is_in_target(tile_position: Vec3, target: Vec3) -> bool{
+fn is_in_target(tile_position: Vec3, target: Vec3) -> bool {
     (tile_position.x - target.x).abs() < 1.0 && (tile_position.y - target.y).abs() < 1.0
         && (tile_position.z - target.z).abs() < 1.0
 }

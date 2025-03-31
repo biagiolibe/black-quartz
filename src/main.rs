@@ -8,6 +8,10 @@ mod prelude {
     pub use crate::loading::*;
     pub use crate::menu::*;
     pub use crate::player::*;
+    pub const SCREEN_WIDTH: i32 = 80;
+    pub const SCREEN_HEIGHT: i32 = 50;
+    pub const TILE_SIZE: f32 = 64.0;
+    pub const DISPLAY_HEIGHT: i32 = SCREEN_HEIGHT / 2;
 }
 
 use crate::game::GamePlugin;
@@ -16,6 +20,7 @@ use bevy::prelude::*;
 use bevy::render::render_resource::{Extent3d, TextureDimension, TextureFormat};
 use bevy::window::WindowMode;
 use bevy_rapier2d::prelude::*;
+use crate::prelude::TILE_SIZE;
 
 #[derive(Component)]
 struct BlackQuartzCamera;
@@ -47,8 +52,7 @@ fn setup(
     mut commands: Commands,
     mut images: ResMut<Assets<Image>>,
 ) {
-
-    let tile_size = Vec2::new(64.0, 64.0);
+    let tile_size = Vec2::new(TILE_SIZE, TILE_SIZE);
 
     // Crea un'immagine vuota (bianca) per il texture atlas
     let mut image = Image::new_fill(
@@ -60,10 +64,10 @@ fn setup(
         TextureDimension::D2,
         &[139, 69, 19, 255], // RGBA (marrone)
         TextureFormat::Rgba8UnormSrgb,
-        RenderAssetUsages::default()
+        RenderAssetUsages::default(),
     );
 
-    let handle_image= images.add(image);
+    let handle_image = images.add(image);
 
     // Ground
     for x in 0..4 {
@@ -73,10 +77,10 @@ fn setup(
                     image: handle_image.clone(),
                     ..default()
                 },
-                Transform::from_xyz(x as f32 * tile_size.x, (y as f32 * tile_size.y )*(-1.0), 0.0),
+                Transform::from_xyz(x as f32 * tile_size.x, (y as f32 * tile_size.y) * (-1.0), 0.0),
                 GlobalTransform::default(),
                 RigidBody::Fixed,
-                Collider::cuboid(32.0, 32.0),
+                Collider::cuboid(TILE_SIZE / 2f32, TILE_SIZE / 2f32),
                 Tile
             ));
         }
