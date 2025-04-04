@@ -1,9 +1,7 @@
-use bevy::math::vec3;
 use crate::prelude::*;
-use bevy::prelude::*;
-use bevy_rapier2d::dynamics::{GravityScale, RigidBody, Velocity};
-use bevy_rapier2d::geometry::Collider;
 use crate::Tile;
+use bevy::prelude::*;
+use bevy_rapier2d::prelude::*;
 
 pub struct PlayerPlugin;
 
@@ -36,7 +34,7 @@ fn spawn_player(
         Transform::from_xyz(0.0, 50.0, 0.0),
         GlobalTransform::default(),
         RigidBody::Dynamic,
-        Collider::cuboid( TILE_SIZE/2f32, TILE_SIZE/2f32),
+        Collider::cuboid(TILE_SIZE / 2f32, TILE_SIZE / 2f32),
         GravityScale(6.0),
         Velocity::zero(),
     ));
@@ -67,7 +65,6 @@ fn drill(
     terrain_tiles: Query<(&Transform, Entity), With<Tile>>,
 ) {
     if let Ok(mut transform) = player.get_single() {
-
         let to_drill = keyboard_input.get_pressed().fold(transform.translation, |position, key| {
             match key {
                 KeyCode::ArrowLeft => Vec3::new(position.x - TILE_SIZE, position.y, position.z),
@@ -80,7 +77,6 @@ fn drill(
         terrain_tiles.iter()
             .filter(|(tile_position, _)| is_in_target(tile_position.translation, to_drill))
             .for_each(|(tile_pos, entity)| {
-                println!("to despaw {0}", tile_pos.translation);
                 commands.entity(entity).despawn();
             });
     }

@@ -8,17 +8,14 @@ mod prelude {
     pub use crate::loading::*;
     pub use crate::menu::*;
     pub use crate::player::*;
-    pub const SCREEN_WIDTH: i32 = 80;
-    pub const SCREEN_HEIGHT: i32 = 50;
     pub const TILE_SIZE: f32 = 64.0;
-    pub const DISPLAY_HEIGHT: i32 = SCREEN_HEIGHT / 2;
 }
 
 use crate::game::GamePlugin;
 use bevy::asset::RenderAssetUsages;
 use bevy::prelude::*;
 use bevy::render::render_resource::{Extent3d, TextureDimension, TextureFormat};
-use bevy::window::WindowMode;
+use bevy::window::{PrimaryWindow, WindowMode};
 use bevy_rapier2d::prelude::*;
 use crate::prelude::TILE_SIZE;
 
@@ -44,18 +41,19 @@ fn main() {
             RapierDebugRenderPlugin::default(),
         ))
         .add_plugins(GamePlugin)
-        .add_systems(Startup, setup)
+        .add_systems(Startup, (setup, setup_borders))
         .run();
 }
 
 fn setup(
     mut commands: Commands,
     mut images: ResMut<Assets<Image>>,
+    windows: Query<&Window, With<PrimaryWindow>>,
 ) {
     let tile_size = Vec2::new(TILE_SIZE, TILE_SIZE);
 
     // Crea un'immagine vuota (bianca) per il texture atlas
-    let mut image = Image::new_fill(
+    let image = Image::new_fill(
         Extent3d {
             width: tile_size.x as u32,
             height: tile_size.y as u32,
@@ -66,12 +64,14 @@ fn setup(
         TextureFormat::Rgba8UnormSrgb,
         RenderAssetUsages::default(),
     );
-
     let handle_image = images.add(image);
 
+    let window = windows.single();
     // Ground
-    for x in 0..4 {
-        for y in 0..4 {
+    let tiles_number_x = (window.resolution.width() / TILE_SIZE) as i32;
+    let tiles_number_y = (window.resolution.height() / TILE_SIZE) as i32;
+    for x in -tiles_number_x..tiles_number_x {
+        for y in 0..tiles_number_y {
             commands.spawn((
                 Sprite {
                     image: handle_image.clone(),
@@ -94,3 +94,37 @@ fn setup(
     );
 }
 
+fn setup_borders(
+    mut commands: Commands,
+    window_query: Query<&Window, With<PrimaryWindow>>,
+) {
+    let window = window_query.single();
+
+    //Top border
+    commands.spawn((
+        RigidBody::Fixed,
+        Collider::cuboid(window.resolution.width() / 2.0, 5.0),
+        Transform::from_xyz(0.0, window.height() / 2.0, 0.0)
+    ));
+
+    //Bottom border
+    commands.spawn((
+        RigidBody::Fixed,
+        Collider::cuboid(window.resolution.width() / 2.0, 5.0),
+        Transform::from_xyz(0.0, -(window.height() / 2.0), 0.0)
+    ));
+
+    //Left border
+    commands.spawn((
+        RigidBody::Fixed,
+        Collider::cuboid(5.0, window.resolution.height() / 2.0),
+        Transform::from_xyz(-(window.width() / 2.0), 0.0, 0.0)
+    ));
+
+    //Right border
+    commands.spawn((
+        RigidBody::Fixed,
+        Collider::cuboid(5.0, window.resolution.height() / 2.0),
+        Transform::from_xyz(window.width() / 2.0, 0.0, 0.0)
+    ));
+}
