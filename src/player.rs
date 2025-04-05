@@ -1,6 +1,7 @@
 use crate::Tile;
 use crate::prelude::*;
 use bevy::prelude::*;
+use bevy_rapier2d::parry::transformation::utils::transform;
 use bevy_rapier2d::prelude::*;
 
 pub struct PlayerPlugin;
@@ -15,12 +16,7 @@ impl Plugin for PlayerPlugin {
         app.add_systems(OnEnter(GameState::Playing), spawn_player)
             .add_systems(
                 Update,
-                (
-                    drill,
-                    move_player
-                        .run_if(in_state(GameState::Playing))
-                        .after(drill),
-                ),
+                (drill, move_player.run_if(in_state(GameState::Playing))).chain(),
             );
     }
 }
@@ -34,14 +30,14 @@ fn spawn_player(mut commands: Commands) {
         .spawn((
             Player,
             Sprite {
-                color: Color::srgb(0.0, 195.0, 0.0),
+                color: Color::srgb(0.0, 195.0, 0.0), //GREEN
                 custom_size: Some(Vec2::new(TILE_SIZE, TILE_SIZE)),
                 ..default()
             },
             Transform::from_xyz(0.0, 50.0, 0.0),
             GlobalTransform::default(),
             RigidBody::Dynamic,
-            Collider::capsule_y((TILE_SIZE-28.0) / 2f32, 14.0),
+            Collider::capsule_y((TILE_SIZE - 28.0) / 2f32, 14.0),
             GravityScale(6.0),
             Velocity::zero(),
         ))
@@ -49,9 +45,10 @@ fn spawn_player(mut commands: Commands) {
 }
 fn move_player(
     keyboard_input: Res<ButtonInput<KeyCode>>,
-    mut query: Query<&mut Velocity, With<RigidBody>>,
+    mut query_player: Query<(&mut Velocity, &Transform), With<Player>>,
+    mut query_camera: Query<&mut Transform, (With<Camera2d>, Without<Player>)>,
 ) {
-    if let Ok(mut velocity) = query.get_single_mut() {
+    if let Ok((mut velocity, player_pos)) = query_player.get_single_mut() {
         let movement = keyboard_input
             .get_pressed()
             .fold(Vec2::ZERO, |mut acceleration, key| {
@@ -65,6 +62,13 @@ fn move_player(
                 acceleration
             });
         velocity.linvel = movement * 100.0;
+
+        let mut camera = query_camera.single_mut();
+        camera.translation = Vec3::new(
+            player_pos.translation.x,
+            player_pos.translation.y,
+            camera.translation.z,
+        );
     }
 }
 
@@ -83,7 +87,7 @@ fn drill(
                 KeyCode::ArrowDown => Vec3::new(position.x, position.y - TILE_SIZE, position.z),
                 _ => position,
             });
-        //TODO find a way to iter only over the direct adjacent
+        //FIXME find a way to iter only over the direct adjacent
         terrain_tiles
             .iter()
             .filter(|(tile_position, _)| is_in_target(tile_position.translation, to_drill))
