@@ -34,14 +34,14 @@ fn spawn_player(mut commands: Commands) {
         .spawn((
             Player,
             Sprite {
-                color: Color::srgb(0.8, 0.2, 0.2),
+                color: Color::srgb(0.0, 195.0, 0.0),
                 custom_size: Some(Vec2::new(TILE_SIZE, TILE_SIZE)),
                 ..default()
             },
             Transform::from_xyz(0.0, 50.0, 0.0),
             GlobalTransform::default(),
             RigidBody::Dynamic,
-            Collider::cuboid(TILE_SIZE / 2f32, TILE_SIZE / 2f32),
+            Collider::capsule_y((TILE_SIZE-28.0) / 2f32, 14.0),
             GravityScale(6.0),
             Velocity::zero(),
         ))
@@ -83,7 +83,7 @@ fn drill(
                 KeyCode::ArrowDown => Vec3::new(position.x, position.y - TILE_SIZE, position.z),
                 _ => position,
             });
-
+        //TODO find a way to iter only over the direct adjacent
         terrain_tiles
             .iter()
             .filter(|(tile_position, _)| is_in_target(tile_position.translation, to_drill))
@@ -94,7 +94,7 @@ fn drill(
 }
 
 fn is_in_target(tile_position: Vec3, target: Vec3) -> bool {
-    (tile_position.x - target.x).abs() < 1.0
-        && (tile_position.y - target.y).abs() < 1.0
-        && (tile_position.z - target.z).abs() < 1.0
+    (tile_position.x - target.x).abs() < 4.0
+        && (tile_position.y - target.y).abs() < 4.0
+        && (tile_position.z - target.z).abs() < 4.0
 }
