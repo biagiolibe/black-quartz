@@ -8,7 +8,7 @@ mod prelude {
     pub use crate::loading::*;
     pub use crate::menu::*;
     pub use crate::player::*;
-    pub const TILE_SIZE: f32 = 64.0;
+    pub const TILE_SIZE: f32 = 32.0;
 }
 
 use crate::game::GamePlugin;
@@ -30,7 +30,7 @@ fn main() {
         .add_plugins((
             DefaultPlugins.set(WindowPlugin {
                 primary_window: Some(Window {
-                    title: "Drilly McDrillface".to_string(),
+                    title: "Black Quartz".to_string(),
                     mode: WindowMode::Windowed,
                     resizable: true,
                     ..default()
