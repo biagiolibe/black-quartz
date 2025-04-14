@@ -1,7 +1,7 @@
-use crate::Tile;
 use crate::prelude::*;
+use crate::{BlackQuartzCamera, Tile};
 use bevy::prelude::*;
-use bevy_rapier2d::parry::transformation::utils::transform;
+use bevy::window::PrimaryWindow;
 use bevy_rapier2d::prelude::*;
 
 pub struct PlayerPlugin;
@@ -46,7 +46,8 @@ fn spawn_player(mut commands: Commands) {
 fn move_player(
     keyboard_input: Res<ButtonInput<KeyCode>>,
     mut query_player: Query<(&mut Velocity, &Transform), With<Player>>,
-    mut query_camera: Query<&mut Transform, (With<Camera2d>, Without<Player>)>,
+    mut query_camera: Query<(&mut Transform, &Camera), (With<BlackQuartzCamera>, Without<Player>)>,
+    windows: Query<&Window, With<PrimaryWindow>>,
 ) {
     if let Ok((mut velocity, player_pos)) = query_player.get_single_mut() {
         let movement = keyboard_input
@@ -63,11 +64,16 @@ fn move_player(
             });
         velocity.linvel = movement * 100.0;
 
-        let mut camera = query_camera.single_mut();
-        camera.translation = Vec3::new(
-            player_pos.translation.x,
-            player_pos.translation.y,
-            camera.translation.z,
+        let window = windows.single();
+
+        let (mut camera_pos, camera) = query_camera.single_mut();
+        let offset = camera.sub_camera_view.unwrap().offset;
+        let x_pos = (player_pos.translation.x + offset.x).min(window.width());
+        let y_pos = (player_pos.translation.y + offset.y).min(window.height());
+        camera_pos.translation = Vec3::new(
+            x_pos,
+            y_pos,
+            camera_pos.translation.z,
         );
     }
 }

@@ -90,23 +90,25 @@ fn setup(
             ));
         }
     }
+    println!("window x: {}, y: {}", window.resolution.width(), window.resolution.height());
 
+    println!("window offset x: {}, y: {}", window.resolution.width() / 8., window.resolution.height() / 8.);
     //TODO move to a plugin?
     // Camera
     commands.spawn((
-        Camera2d,
-        Camera {
-            order: 0,
-            sub_camera_view: Some(SubCameraView {
-                full_size: UVec2::new(window.resolution.width() as u32, window.resolution.height() as u32),
-                offset: Vec2::new(window.resolution.width()/4., window.resolution.height()/4.),
-                size: UVec2::new(window.resolution.width()as u32/2, window.resolution.height()as u32/2),
-                ..default()
-            }),
-            ..default()
-        },
-        BlackQuartzCamera,
-    ));
+                       Camera2d,
+                       Camera {
+                           order: 0,
+                           sub_camera_view: Some(SubCameraView {
+                               full_size: UVec2::new(window.resolution.width() as u32, window.resolution.height() as u32),
+                               offset: Vec2::new(window.resolution.width() / 8., window.resolution.height() / 8.),
+                               size: UVec2::new(window.resolution.width() as u32 / 2, window.resolution.height() as u32 / 2),
+                               ..default()
+                           }),
+                           ..default()
+                       },
+                       BlackQuartzCamera,
+                   ));
 }
 
 fn setup_borders(mut commands: Commands, window_query: Query<&Window, With<PrimaryWindow>>) {
