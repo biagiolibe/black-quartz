@@ -67,9 +67,8 @@ fn move_player(
         let window = windows.single();
 
         let (mut camera_pos, camera) = query_camera.single_mut();
-        let offset = camera.sub_camera_view.unwrap().offset;
-        let x_pos = (player_pos.translation.x + offset.x).min(window.width());
-        let y_pos = (player_pos.translation.y + offset.y).min(window.height());
+        let x_pos = (player_pos.translation.x).min(window.width());
+        let y_pos = (player_pos.translation.y).min(window.height());
         camera_pos.translation = Vec3::new(
             x_pos,
             y_pos,

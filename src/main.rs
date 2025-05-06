@@ -15,7 +15,6 @@ use crate::game::GamePlugin;
 use crate::prelude::TILE_SIZE;
 use bevy::asset::RenderAssetUsages;
 use bevy::prelude::*;
-use bevy::render::camera::SubCameraView;
 use bevy::render::render_resource::{Extent3d, TextureDimension, TextureFormat};
 use bevy::window::{PrimaryWindow, WindowMode};
 use bevy_rapier2d::prelude::*;
@@ -42,7 +41,7 @@ fn main() {
             RapierDebugRenderPlugin::default(),
         ))
         .add_plugins(GamePlugin)
-        .add_systems(Startup, (setup, setup_borders))
+        .add_systems(Startup, (setup))
         .run();
 }
 
@@ -90,22 +89,17 @@ fn setup(
             ));
         }
     }
-    println!("window x: {}, y: {}", window.resolution.width(), window.resolution.height());
-
-    println!("window offset x: {}, y: {}", window.resolution.width() / 8., window.resolution.height() / 8.);
     //TODO move to a plugin?
     // Camera
     commands.spawn((
-                       Camera2d,
-                       Camera {
-                           order: 0,
-                           sub_camera_view: Some(SubCameraView {
-                               full_size: UVec2::new(window.resolution.width() as u32, window.resolution.height() as u32),
-                               offset: Vec2::new(window.resolution.width() / 8., window.resolution.height() / 8.),
-                               size: UVec2::new(window.resolution.width() as u32 / 2, window.resolution.height() as u32 / 2),
-                               ..default()
-                           }),
-                           ..default()
+                       Camera2d::default(),
+                       OrthographicProjection{
+                           near: -1000.0,
+                           far: 1000.0,
+                           viewport_origin: Vec2::new(0.5,0.5),
+                           scaling_mode: Default::default(),
+                           scale: 0.5,
+                           area: Default::default(),
                        },
                        BlackQuartzCamera,
                    ));
