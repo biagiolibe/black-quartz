@@ -1,5 +1,6 @@
+use crate::BlackQuartzCamera;
+use crate::map::{TILE_SIZE, Tile};
 use crate::prelude::*;
-use crate::{BlackQuartzCamera, Tile};
 use bevy::prelude::*;
 use bevy::window::PrimaryWindow;
 use bevy_rapier2d::prelude::*;
@@ -30,15 +31,14 @@ fn spawn_player(mut commands: Commands) {
         .spawn((
             Player,
             Sprite {
-                color: Color::srgb(0.0, 195.0, 0.0), //GREEN
+                color: Color::srgb(0.90, 0.75, 0.25), //INDUSTRIAL YELLOW
                 custom_size: Some(Vec2::new(TILE_SIZE, TILE_SIZE)),
                 ..default()
             },
             Transform::from_xyz(0.0, 50.0, 0.0),
-            GlobalTransform::default(),
             RigidBody::Dynamic,
             Collider::capsule_y((TILE_SIZE - 28.0) / 2f32, 14.0),
-            GravityScale(6.0),
+            GravityScale(7.0),
             Velocity::zero(),
         ))
         .insert(LockedAxes::ROTATION_LOCKED);
@@ -62,18 +62,14 @@ fn move_player(
                 }
                 acceleration
             });
-        velocity.linvel = movement * 100.0;
+        velocity.linvel = movement * 200.0;
 
         let window = windows.single();
 
         let (mut camera_pos, camera) = query_camera.single_mut();
         let x_pos = (player_pos.translation.x).min(window.width());
         let y_pos = (player_pos.translation.y).min(window.height());
-        camera_pos.translation = Vec3::new(
-            x_pos,
-            y_pos,
-            camera_pos.translation.z,
-        );
+        camera_pos.translation = Vec3::new(x_pos, y_pos, camera_pos.translation.z);
     }
 }
 
