@@ -1,8 +1,8 @@
 mod game;
 mod loading;
+mod map;
 mod menu;
 mod player;
-mod map;
 
 mod prelude {
     pub use crate::game::*;
@@ -15,7 +15,6 @@ use crate::game::GamePlugin;
 use bevy::prelude::*;
 use bevy::window::{PrimaryWindow, WindowMode};
 use bevy_rapier2d::prelude::*;
-use crate::map::MapPlugin;
 
 #[derive(Component)]
 struct BlackQuartzCamera;
@@ -33,7 +32,7 @@ fn main() {
                 ..default()
             }),
             RapierPhysicsPlugin::<NoUserData>::pixels_per_meter(100.0),
-            RapierDebugRenderPlugin::default(),
+            //RapierDebugRenderPlugin::default(),
         ))
         .add_plugins(GamePlugin)
         .add_systems(Startup, (setup))
@@ -48,17 +47,17 @@ fn setup(
     //TODO move to a plugin?
     // Camera
     commands.spawn((
-                       Camera2d::default(),
-                       OrthographicProjection{
-                           near: -1000.0,
-                           far: 1000.0,
-                           viewport_origin: Vec2::new(0.5,0.5),
-                           scaling_mode: Default::default(),
-                           scale: 0.6,
-                           area: Default::default(),
-                       },
-                       BlackQuartzCamera,
-                   ));
+        Camera2d::default(),
+        OrthographicProjection {
+            near: -1000.0,
+            far: 1000.0,
+            viewport_origin: Vec2::new(0.5, 0.5),
+            scaling_mode: Default::default(),
+            scale: 0.6,
+            area: Default::default(),
+        },
+        BlackQuartzCamera,
+    ));
 }
 
 fn setup_borders(mut commands: Commands, window_query: Query<&Window, With<PrimaryWindow>>) {

@@ -12,8 +12,10 @@ impl Plugin for LoadingPlugin {
 
 #[derive(Resource)]
 pub struct GameAssets {
-    pub(crate) texture: Handle<Image>,
-    pub(crate) layout: Handle<TextureAtlasLayout>,
+    pub texture: Handle<Image>,
+    pub texture_layout: Handle<TextureAtlasLayout>,
+    pub terrain_texture: Handle<Image>,
+    pub terrain_texture_layout: Handle<TextureAtlasLayout>,
 }
 
 pub fn load_assets(
@@ -23,19 +25,33 @@ pub fn load_assets(
     mut next_state: ResMut<NextState<GameState>>,
 ) {
     println!("Loading assets");
-    let texture_handle: Handle<Image> = asset_server.load("textures/tileset.png");
-    let layout = TextureAtlasLayout::from_grid(
+    //Terrain assets
+    let terrain_texture_handle: Handle<Image> = asset_server.load("textures/tileset.png");
+    let terrain_layout = TextureAtlasLayout::from_grid(
         UVec2::new(512, 512),
         2,
         2,
         None,
         None,
     );
-    let layout_handle = texture_atlas_layouts.add(layout);
+    let terrain_layout_handle = texture_atlas_layouts.add(terrain_layout);
+
+    //Other assets
+    let texture_handle: Handle<Image> = asset_server.load("textures/tileset_base.png");
+    let texture_layout = TextureAtlasLayout::from_grid(
+        UVec2::new(512, 512),
+        2,
+        1,
+        None,
+        Some(UVec2::new(0, 256)),
+    );
+    let texture_layout_handle = texture_atlas_layouts.add(texture_layout);
 
     commands.insert_resource(GameAssets{
         texture:texture_handle,
-        layout:layout_handle,
+        texture_layout:texture_layout_handle,
+        terrain_texture: terrain_texture_handle,
+        terrain_texture_layout: terrain_layout_handle
     });
     println!("Loading complete");
     next_state.set(GameState::Playing);

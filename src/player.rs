@@ -34,8 +34,8 @@ game_assets: Res<GameAssets>,) {
             Sprite {
                 image: game_assets.texture.clone(),
                 texture_atlas: Some(TextureAtlas {
-                    layout: game_assets.layout.clone(),
-                    index: 3,
+                    layout: game_assets.texture_layout.clone(),
+                    index: 1,
                 }),
                 //color: Color::srgb(0.90, 0.75, 0.25), //INDUSTRIAL YELLOW
                 custom_size: Some(Vec2::new(TILE_SIZE, TILE_SIZE)),

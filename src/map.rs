@@ -57,9 +57,9 @@ fn generate_map(mut commands: Commands, game_assets: Res<GameAssets>) {
         for y in -GRID_HEIGHT..0 {
             commands.spawn((
                 Sprite {
-                    image: game_assets.texture.clone(),
+                    image: game_assets.terrain_texture.clone(),
                     texture_atlas: Some(TextureAtlas {
-                        layout: game_assets.layout.clone(),
+                        layout: game_assets.terrain_texture_layout.clone(),
                         index: 0,
                     }),
                     custom_size: Some(Vec2::splat(TILE_SIZE)),
