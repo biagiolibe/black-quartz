@@ -21,10 +21,6 @@ impl Plugin for PlayerPlugin {
             );
     }
 }
-
-#[derive(Component)]
-pub struct Menu;
-
 fn spawn_player(mut commands: Commands,
 game_assets: Res<GameAssets>,) {
     // Drilling Machine (Player)
@@ -85,7 +81,7 @@ fn drill(
     player: Query<&Transform, With<Player>>,
     terrain_tiles: Query<(&Transform, Entity), With<Tile>>,
 ) {
-    if let Ok(mut transform) = player.get_single() {
+    if let Ok(transform) = player.get_single() {
         let to_drill = keyboard_input
             .get_pressed()
             .fold(transform.translation, |position, key| match key {
@@ -98,7 +94,7 @@ fn drill(
         terrain_tiles
             .iter()
             .filter(|(tile_position, _)| is_in_target(tile_position.translation, to_drill))
-            .for_each(|(tile_pos, entity)| {
+            .for_each(|(_, entity)| {
                 commands.entity(entity).despawn();
             });
     }
