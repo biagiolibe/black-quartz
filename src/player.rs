@@ -1,6 +1,6 @@
-use crate::BlackQuartzCamera;
-use crate::map::{TILE_SIZE, Tile};
+use crate::map::{Tile, TILE_SIZE};
 use crate::prelude::*;
+use crate::BlackQuartzCamera;
 use bevy::prelude::*;
 use bevy::window::PrimaryWindow;
 use bevy_rapier2d::prelude::*;
