@@ -35,7 +35,7 @@ fn main() {
             RapierPhysicsPlugin::<NoUserData>::pixels_per_meter(100.0),
             RapierDebugRenderPlugin::default(),
         ))
-        .add_plugins((GamePlugin, MapPlugin))
+        .add_plugins(GamePlugin)
         .add_systems(Startup, (setup))
         .run();
 }

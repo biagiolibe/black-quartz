@@ -25,13 +25,19 @@ impl Plugin for PlayerPlugin {
 #[derive(Component)]
 pub struct Menu;
 
-fn spawn_player(mut commands: Commands) {
+fn spawn_player(mut commands: Commands,
+game_assets: Res<GameAssets>,) {
     // Drilling Machine (Player)
     commands
         .spawn((
             Player,
             Sprite {
-                color: Color::srgb(0.90, 0.75, 0.25), //INDUSTRIAL YELLOW
+                image: game_assets.texture.clone(),
+                texture_atlas: Some(TextureAtlas {
+                    layout: game_assets.layout.clone(),
+                    index: 3,
+                }),
+                //color: Color::srgb(0.90, 0.75, 0.25), //INDUSTRIAL YELLOW
                 custom_size: Some(Vec2::new(TILE_SIZE, TILE_SIZE)),
                 ..default()
             },

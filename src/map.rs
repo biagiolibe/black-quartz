@@ -1,3 +1,4 @@
+use crate::loading::GameAssets;
 use crate::map::RockType::Asteroid;
 use crate::map::TileType::Solid;
 use bevy::prelude::*;
@@ -50,12 +51,17 @@ impl Plugin for MapPlugin {
     }
 }
 
-fn generate_map(mut commands: Commands) {
+fn generate_map(mut commands: Commands, game_assets: Res<GameAssets>) {
+    println!("Generating map");
     for x in -GRID_WIDTH..GRID_WIDTH {
         for y in -GRID_HEIGHT..0 {
             commands.spawn((
                 Sprite {
-                    color: Color::srgb(0.28, 0.22, 0.20),
+                    image: game_assets.texture.clone(),
+                    texture_atlas: Some(TextureAtlas {
+                        layout: game_assets.layout.clone(),
+                        index: 0,
+                    }),
                     custom_size: Some(Vec2::splat(TILE_SIZE)),
                     ..default()
                 },
