@@ -3,9 +3,10 @@ use crate::prelude::*;
 use crate::BlackQuartzCamera;
 use bevy::prelude::*;
 use bevy::window::PrimaryWindow;
+use bevy_rapier2d::na::{abs, ComplexField, Matrix};
 use bevy_rapier2d::prelude::*;
 
-pub const PLAYER_DRILLING_STRENGHT: f32 = 0.2;
+pub const PLAYER_DRILLING_STRENGTH: f32 = 0.2; //TODO: add as component of the player
 pub struct PlayerPlugin;
 
 #[derive(Component)]
@@ -32,7 +33,7 @@ game_assets: Res<GameAssets>,) {
                 image: game_assets.texture.clone(),
                 texture_atlas: Some(TextureAtlas {
                     layout: game_assets.texture_layout.clone(),
-                    index: 1,
+                    index: 2,
                 }),
                 //color: Color::srgb(0.90, 0.75, 0.25), //INDUSTRIAL YELLOW
                 custom_size: Some(Vec2::new(TILE_SIZE, TILE_SIZE)),
@@ -87,10 +88,12 @@ fn drill(
 
     if let Ok(transform) = player.get_single() {
         let position = transform.translation;
+        println!("Player position in world px: {:?}", position);
         let current_position = (
-            (position.x / TILE_SIZE) as i32,
-            (position.y / TILE_SIZE) as i32,
+            ((position.x + (position.x/position.x.abs())*TILE_SIZE/2.0) / TILE_SIZE).trunc() as i32,
+            ((position.y + (position.y/position.y.abs())*TILE_SIZE/2.0) / TILE_SIZE).trunc() as i32,
         );
+        println!("Computed current position: {:?}", current_position);
 
         let direction = keyboard_input.get_pressed().find_map(|key| match key {
             KeyCode::ArrowLeft => Some((-1, 0)),
@@ -104,7 +107,7 @@ fn drill(
 
             if let Some(entity) = world_grid.grid.get(&target_index) {
                 if let Ok((mut tile, transform)) = query_tile.get_mut(*entity) {
-                    tile.drilling.integrity -= PLAYER_DRILLING_STRENGHT * time.delta_secs() * (1.0 - tile.drilling.hardness);
+                    tile.drilling.integrity -= PLAYER_DRILLING_STRENGTH * time.delta_secs() * (1.0 - tile.drilling.hardness);
                     println!("tile integrity {:?}", tile.drilling.integrity);
                     if tile.drilling.integrity <= 0.0 {
                         commands.entity(*entity).despawn();

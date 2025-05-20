@@ -28,9 +28,9 @@ pub fn load_assets(
     //Terrain assets
     let terrain_texture_handle: Handle<Image> = asset_server.load("textures/tileset.png");
     let terrain_layout = TextureAtlasLayout::from_grid(
-        UVec2::new(500, 500),
-        1,
-        1,
+        UVec2::new(512, 512),
+        2,
+        2,
         None,
         None,
     );
@@ -41,7 +41,7 @@ pub fn load_assets(
     let texture_layout = TextureAtlasLayout::from_grid(
         UVec2::new(512, 512),
         2,
-        1,
+        2,
         None,
         None,
     );
