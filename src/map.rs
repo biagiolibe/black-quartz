@@ -21,14 +21,21 @@ pub enum RockType {
     Asteroid,
 }
 
+#[derive(Clone, Copy, PartialEq)]
+pub struct Drilling {
+    pub integrity:f32,
+    pub hardness:f32,
+}
+
 #[derive(Resource)]
 pub struct WorldGrid {
-    grid: HashMap<(i32, i32), Entity>,
+    pub grid: HashMap<(i32, i32), Entity>,
 }
 #[derive(Component, Clone, Copy, PartialEq)]
 pub struct Tile {
     tile_type: TileType,
     rock_type: RockType,
+    pub drilling: Drilling
 }
 
 pub struct Map;
@@ -62,6 +69,10 @@ fn generate_map(mut commands: Commands, game_assets: Res<GameAssets>) {
                     Tile {
                         tile_type: Solid,
                         rock_type: Asteroid,
+                        drilling:Drilling{
+                            integrity:0.3,
+                            hardness:0.1,
+                        }
                     },
                 ))
                 .id();

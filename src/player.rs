@@ -1,10 +1,11 @@
-use crate::map::{Tile, TILE_SIZE};
+use crate::map::{Tile, WorldGrid, TILE_SIZE};
 use crate::prelude::*;
 use crate::BlackQuartzCamera;
 use bevy::prelude::*;
 use bevy::window::PrimaryWindow;
 use bevy_rapier2d::prelude::*;
 
+pub const PLAYER_DRILLING_STRENGHT: f32 = 0.2;
 pub struct PlayerPlugin;
 
 #[derive(Component)]
@@ -76,27 +77,47 @@ fn move_player(
 }
 
 fn drill(
+    time: Res<Time>,
     mut commands: Commands,
     keyboard_input: Res<ButtonInput<KeyCode>>,
     player: Query<&Transform, With<Player>>,
-    terrain_tiles: Query<(&Transform, Entity), With<Tile>>,
+    mut world_grid: ResMut<WorldGrid>,
+    mut query_tile: Query<(&mut Tile, &Transform), With<Tile>>,
 ) {
+
     if let Ok(transform) = player.get_single() {
-        let to_drill = keyboard_input
-            .get_pressed()
-            .fold(transform.translation, |position, key| match key {
-                KeyCode::ArrowLeft => Vec3::new(position.x - TILE_SIZE, position.y, position.z),
-                KeyCode::ArrowRight => Vec3::new(position.x + TILE_SIZE, position.y, position.z),
-                KeyCode::ArrowDown => Vec3::new(position.x, position.y - TILE_SIZE, position.z),
-                _ => position,
-            });
-        //FIXME find a way to iter only over the direct adjacent
-        terrain_tiles
-            .iter()
-            .filter(|(tile_position, _)| is_in_target(tile_position.translation, to_drill))
-            .for_each(|(_, entity)| {
-                commands.entity(entity).despawn();
-            });
+        let position = transform.translation;
+        let current_position = (
+            (position.x / TILE_SIZE) as i32,
+            (position.y / TILE_SIZE) as i32,
+        );
+
+        let direction = keyboard_input.get_pressed().find_map(|key| match key {
+            KeyCode::ArrowLeft => Some((-1, 0)),
+            KeyCode::ArrowRight => Some((1, 0)),
+            KeyCode::ArrowDown => Some((0, -1)),
+            KeyCode::ArrowUp => Some((0, 1)),
+            _ => None,
+        });
+        if let Some((dx, dy)) = direction {
+            let target_index = (current_position.0 + dx, current_position.1 + dy);
+
+            if let Some(entity) = world_grid.grid.get(&target_index) {
+                if let Ok((mut tile, transform)) = query_tile.get_mut(*entity) {
+                    tile.drilling.integrity -= PLAYER_DRILLING_STRENGHT * time.delta_secs() * (1.0 - tile.drilling.hardness);
+                    println!("tile integrity {:?}", tile.drilling.integrity);
+                    if tile.drilling.integrity <= 0.0 {
+                        commands.entity(*entity).despawn();
+                        world_grid.grid.remove(&target_index);
+                        println!("Drilled tile at {:?} with player on position {:?}", target_index, current_position);
+                    }
+                }
+                else {
+                    println!("No tile exists to be drilled on position {:?}", target_index);
+                };
+
+            }
+        }
     }
 }
 

@@ -28,22 +28,22 @@ pub fn load_assets(
     //Terrain assets
     let terrain_texture_handle: Handle<Image> = asset_server.load("textures/tileset.png");
     let terrain_layout = TextureAtlasLayout::from_grid(
-        UVec2::new(512, 512),
-        2,
-        2,
+        UVec2::new(500, 500),
+        1,
+        1,
         None,
         None,
     );
     let terrain_layout_handle = texture_atlas_layouts.add(terrain_layout);
 
     //Other assets
-    let texture_handle: Handle<Image> = asset_server.load("textures/tileset_base.png");
+    let texture_handle: Handle<Image> = asset_server.load("textures/drilling_machine.png");
     let texture_layout = TextureAtlasLayout::from_grid(
         UVec2::new(512, 512),
         2,
         1,
         None,
-        Some(UVec2::new(0, 256)),
+        None,
     );
     let texture_layout_handle = texture_atlas_layouts.add(texture_layout);
 
