@@ -1,6 +1,5 @@
 #![allow(clippy::type_complexity)]
 
-use crate::map::MapPlugin;
 use crate::prelude::*;
 use bevy::app::App;
 use bevy::prelude::*;
@@ -25,7 +24,8 @@ impl Plugin for GamePlugin {
                 LoadingPlugin,
                 MenuPlugin,
                 PlayerPlugin,
-                MapPlugin
+                MapPlugin,
+                HUDPlugin
             ));
 /*
         #[cfg(debug_assertions)]

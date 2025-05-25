@@ -1,12 +1,12 @@
-use crate::BlackQuartzCamera;
 use crate::map::{TILE_SIZE, Tile, WorldGrid};
-use crate::prelude::*;
+use crate::prelude::{GameAssets, GameState};
 use bevy::prelude::*;
 use bevy::window::PrimaryWindow;
 use bevy_rapier2d::prelude::{
-    ActiveEvents, Collider, ColliderMassProperties, CollisionEvent, GravityScale, LockedAxes,
+    ActiveEvents, Collider, CollisionEvent, GravityScale, LockedAxes,
     RigidBody, Velocity,
 };
+use crate::BlackQuartzCamera;
 
 pub const PLAYER_DRILLING_STRENGTH: f32 = 0.2; //TODO: add as component of the player
 pub struct PlayerPlugin;
@@ -174,15 +174,11 @@ fn collision_detection(
 
                 let (velocity, mut health, damage) = player.get_mut(player_entity).unwrap();
                 let impact_speed = velocity.linvel.y.abs();
-                println!(
-                    "Player collision detected, with impact speed {:?}",
-                    impact_speed
-                );
                 if impact_speed > 300.0 {
                     let damage_amount = impact_speed * damage.factor;
                     health.current -= damage_amount;
                     println!(
-                        "Player collision detected! Impact speed {:?}, damage {:?}, player integrity {:?}",
+                        "Player collision detected, impact speed {:?}, damage {:?}, player integrity {:?}",
                         impact_speed, damage_amount, health.current
                     );
                 }
