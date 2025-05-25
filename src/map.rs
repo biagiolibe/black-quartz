@@ -2,7 +2,7 @@ use crate::loading::GameAssets;
 use crate::map::RockType::Asteroid;
 use crate::map::TileType::Solid;
 use bevy::prelude::*;
-use bevy_rapier2d::prelude::{Collider, RigidBody};
+use bevy_rapier2d::prelude::{ActiveEvents, Collider, RigidBody};
 use std::collections::HashMap;
 
 pub const TILE_SIZE: f32 = 32.0;
@@ -66,6 +66,7 @@ fn generate_map(mut commands: Commands, game_assets: Res<GameAssets>) {
                     Transform::from_xyz(x as f32 * TILE_SIZE, y as f32 * TILE_SIZE, 0.0),
                     RigidBody::Fixed,
                     Collider::cuboid(TILE_SIZE / 2f32, TILE_SIZE / 2f32),
+                    ActiveEvents::COLLISION_EVENTS,
                     Tile {
                         tile_type: Solid,
                         rock_type: Asteroid,

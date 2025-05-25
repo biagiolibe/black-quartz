@@ -22,3 +22,6 @@ Cargo.lock
 
 # Confidential info
 creds.txt
+
+# Mac files
+.DS_Store
