@@ -14,6 +14,17 @@ pub struct PlayerPlugin;
 #[derive(Component)]
 pub struct Player;
 
+#[derive(Component)]
+pub struct Health {
+    pub current: f32,
+    pub max: f32,
+}
+
+#[derive(Component)]
+pub struct Damage {
+    pub factor: f32,
+}
+
 /// This plugin handles player related stuff like movement
 /// Player logic is only active during the State `GameState::Playing`
 impl Plugin for PlayerPlugin {
@@ -35,13 +46,17 @@ fn spawn_player(mut commands: Commands, game_assets: Res<GameAssets>) {
     commands
         .spawn((
             Player,
+            Health {
+                current: 100.0,
+                max: 100.0,
+            },
+            Damage { factor: 0.05 },
             Sprite {
                 image: game_assets.texture.clone(),
                 texture_atlas: Some(TextureAtlas {
                     layout: game_assets.texture_layout.clone(),
                     index: 2,
                 }),
-                //color: Color::srgb(0.90, 0.75, 0.25), //INDUSTRIAL YELLOW
                 custom_size: Some(Vec2::new(TILE_SIZE, TILE_SIZE)),
                 ..default()
             },
@@ -142,26 +157,37 @@ fn drill(
 
 fn collision_detection(
     mut collision_events: EventReader<CollisionEvent>,
-    player: Query<&Transform, With<Player>>,
+    mut player: Query<(&Velocity, &mut Health, &Damage), With<Player>>,
     tiles: Query<&Tile, With<Tile>>,
 ) {
     for event in collision_events.read() {
         match event {
-            CollisionEvent::Started(event1, event2, _flag) => {
-                println!("Collision event: {:?} to {:?}", event1, event2);
-                let player_collision = player.get(*event1).is_ok() || player.get(*event2).is_ok();
-                let tile_collision = tiles.get(*event1).is_ok() || tiles.get(*event2).is_ok();
-                if player_collision && tile_collision {
-                    println!("Player collision detected");
+            CollisionEvent::Started(entity1, entity2, _) => {
+                let (player_entity, tile_entity) =
+                    if player.get(*entity1).is_ok() && tiles.get(*entity2).is_ok() {
+                        (*entity1, *entity2)
+                    } else if player.get(*entity2).is_ok() && tiles.get(*entity1).is_ok() {
+                        (*entity2, *entity1)
+                    } else {
+                        continue;
+                    };
+
+                let (velocity, mut health, damage) = player.get_mut(player_entity).unwrap();
+                let impact_speed = velocity.linvel.y.abs();
+                println!(
+                    "Player collision detected, with impact speed {:?}",
+                    impact_speed
+                );
+                if impact_speed > 300.0 {
+                    let damage_amount = impact_speed * damage.factor;
+                    health.current -= damage_amount;
+                    println!(
+                        "Player collision detected! Impact speed {:?}, damage {:?}, player integrity {:?}",
+                        impact_speed, damage_amount, health.current
+                    );
                 }
             }
             _ => {}
         }
     }
-}
-
-fn is_in_target(tile_position: Vec3, target: Vec3) -> bool {
-    (tile_position.x - target.x).abs() < 4.0
-        && (tile_position.y - target.y).abs() < 4.0
-        && (tile_position.z - target.z).abs() < 4.0
 }
