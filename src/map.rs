@@ -23,8 +23,8 @@ pub enum RockType {
 
 #[derive(Clone, Copy, PartialEq)]
 pub struct Drilling {
-    pub integrity:f32,
-    pub hardness:f32,
+    pub integrity: f32,
+    pub hardness: f32,
 }
 
 #[derive(Resource)]
@@ -35,7 +35,7 @@ pub struct WorldGrid {
 pub struct Tile {
     tile_type: TileType,
     rock_type: RockType,
-    pub drilling: Drilling
+    pub drilling: Drilling,
 }
 
 pub struct Map;
@@ -70,10 +70,10 @@ fn generate_map(mut commands: Commands, game_assets: Res<GameAssets>) {
                     Tile {
                         tile_type: Solid,
                         rock_type: Asteroid,
-                        drilling:Drilling{
-                            integrity:0.3,
-                            hardness:0.1,
-                        }
+                        drilling: Drilling {
+                            integrity: 0.3,
+                            hardness: 0.1,
+                        },
                     },
                 ))
                 .id();
@@ -83,4 +83,15 @@ fn generate_map(mut commands: Commands, game_assets: Res<GameAssets>) {
     commands.insert_resource(WorldGrid {
         grid: world_grid.clone(),
     });
+}
+
+pub fn world_to_grid_position(world_position: Vec2) -> (i32, i32) {
+    (
+        ((world_position.x + (world_position.x / world_position.x.abs()) * TILE_SIZE / 2.0)
+            / TILE_SIZE)
+            .trunc() as i32,
+        ((world_position.y + (world_position.y / world_position.y.abs()) * TILE_SIZE / 2.0)
+            / TILE_SIZE)
+            .trunc() as i32,
+    )
 }

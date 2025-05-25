@@ -1,14 +1,13 @@
-use crate::map::{TILE_SIZE, Tile, WorldGrid};
-use crate::prelude::{GameAssets, GameState};
+use crate::map::{Tile, WorldGrid, TILE_SIZE};
+use crate::prelude::{world_to_grid_position, GameAssets, GameState};
+use crate::BlackQuartzCamera;
 use bevy::prelude::*;
 use bevy::window::PrimaryWindow;
 use bevy_rapier2d::prelude::{
-    ActiveEvents, Collider, CollisionEvent, GravityScale, LockedAxes,
-    RigidBody, Velocity,
+    ActiveEvents, Collider, CollisionEvent, GravityScale, LockedAxes, RigidBody, Velocity,
 };
-use crate::BlackQuartzCamera;
 
-pub const PLAYER_DRILLING_STRENGTH: f32 = 0.2; //TODO: add as component of the player
+pub const PLAYER_DRILLING_STRENGTH: f32 = 1.0; //TODO: add as component of the player
 pub struct PlayerPlugin;
 
 #[derive(Component)]
@@ -86,7 +85,7 @@ fn move_player(
                     KeyCode::ArrowDown => acceleration.y -= 1.0,
                     _ => (),
                 }
-                velocity.linvel = acceleration * 100.0;
+                velocity.linvel = acceleration * 200.0;
                 acceleration
             });
         //
@@ -110,15 +109,8 @@ fn drill(
     mut query_tile: Query<(&mut Tile, &Transform), With<Tile>>,
 ) {
     if let Ok(transform) = player.get_single() {
-        let position = transform.translation;
-        //println!("Player position in world px: {:?}", position);
-        let current_position = (
-            ((position.x + (position.x / position.x.abs()) * TILE_SIZE / 2.0) / TILE_SIZE).trunc()
-                as i32,
-            ((position.y + (position.y / position.y.abs()) * TILE_SIZE / 2.0) / TILE_SIZE).trunc()
-                as i32,
-        );
-        //println!("Computed current position: {:?}", current_position);
+        let position = transform.translation.truncate();
+        let current_position = world_to_grid_position(position);
 
         let direction = keyboard_input.get_pressed().find_map(|key| match key {
             KeyCode::ArrowLeft => Some((-1, 0)),

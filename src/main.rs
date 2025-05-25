@@ -38,7 +38,7 @@ fn main() {
             //RapierDebugRenderPlugin::default(),
         ))
         .add_plugins(GamePlugin)
-        .add_systems(Startup, (setup))
+        .add_systems(Startup, setup)
         .run();
 }
 
