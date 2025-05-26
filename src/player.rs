@@ -8,6 +8,7 @@ use bevy_rapier2d::prelude::{
 };
 
 pub const PLAYER_DRILLING_STRENGTH: f32 = 1.0; //TODO: add as component of the player
+pub const PLAYER_SPEED_FACTOR: f32 = 300.0; //TODO: add as component of the player
 pub struct PlayerPlugin;
 
 #[derive(Component)]
@@ -85,7 +86,9 @@ fn move_player(
                     KeyCode::ArrowDown => acceleration.y -= 1.0,
                     _ => (),
                 }
-                velocity.linvel = acceleration * 200.0;
+                if acceleration != Vec2::ZERO{
+                    velocity.linvel = acceleration * PLAYER_SPEED_FACTOR;
+                }
                 acceleration
             });
         //
