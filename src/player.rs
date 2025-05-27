@@ -1,6 +1,6 @@
-use crate::map::{Tile, WorldGrid, TILE_SIZE};
-use crate::prelude::{world_to_grid_position, GameAssets, GameState};
 use crate::BlackQuartzCamera;
+use crate::map::{TILE_SIZE, Tile, WorldGrid};
+use crate::prelude::{GameAssets, GameState, world_to_grid_position};
 use bevy::prelude::*;
 use bevy::window::PrimaryWindow;
 use bevy_rapier2d::prelude::{
@@ -78,18 +78,18 @@ fn move_player(
     if let Ok((mut velocity, player_pos)) = query_player.get_single_mut() {
         keyboard_input
             .get_pressed()
-            .fold(Vec2::ZERO, |mut acceleration, key| {
+            .fold(Vec2::ZERO, |mut direction, key| {
                 match key {
-                    KeyCode::ArrowLeft => acceleration.x -= 1.0,
-                    KeyCode::ArrowRight => acceleration.x += 1.0,
-                    KeyCode::ArrowUp => acceleration.y += 1.0,
-                    KeyCode::ArrowDown => acceleration.y -= 1.0,
+                    KeyCode::ArrowLeft => direction.x -= 1.0,
+                    KeyCode::ArrowRight => direction.x += 1.0,
+                    KeyCode::ArrowUp => direction.y += 1.0,
+                    KeyCode::ArrowDown => direction.y -= 1.0,
                     _ => (),
                 }
-                if acceleration != Vec2::ZERO{
-                    velocity.linvel = acceleration * PLAYER_SPEED_FACTOR;
+                if direction != Vec2::ZERO {
+                    velocity.linvel = direction.normalize() * PLAYER_SPEED_FACTOR;
                 }
-                acceleration
+                direction
             });
         //
 
