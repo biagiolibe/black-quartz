@@ -8,8 +8,8 @@ use rand::{Rng, random};
 use std::collections::HashMap;
 
 pub const TILE_SIZE: f32 = 32.0;
-const GRID_WIDTH: isize = 50;
-const GRID_HEIGHT: isize = 100;
+pub const GRID_WIDTH: isize = 50;
+pub const GRID_HEIGHT: isize = 100;
 const FILL_PROBABILITY: f32 = 0.55;
 const SIMULATION_STEPS: usize = 4;
 pub struct MapPlugin;
@@ -35,6 +35,7 @@ pub struct Drilling {
 pub struct WorldGrid {
     pub grid: HashMap<(i32, i32), Entity>,
     pub tiles: Vec<Vec<TileType>>,
+    pub map_area: Rect,
 }
 #[derive(Component, Clone, Copy, PartialEq)]
 pub struct Tile {
@@ -82,6 +83,12 @@ fn initialize_world_grid(mut commands: Commands) {
     commands.insert_resource(WorldGrid {
         grid: HashMap::new(),
         tiles,
+        map_area: Rect::new(
+            -(GRID_WIDTH as f32 / 2.0) * TILE_SIZE,
+            -(GRID_HEIGHT as f32) * TILE_SIZE,
+            (GRID_WIDTH as f32 / 2.0) * TILE_SIZE,
+            (GRID_HEIGHT as f32) * TILE_SIZE,
+        ),
     });
 }
 
