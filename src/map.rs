@@ -8,13 +8,13 @@ use rand::{Rng, random};
 use std::collections::HashMap;
 
 pub const TILE_SIZE: f32 = 32.0;
-const GRID_WIDTH: isize = 200;
-const GRID_HEIGHT: isize = 200;
-const FILL_PROBABILITY: f32 = 0.45;
-const SIMULATION_STEPS: usize = 5;
+const GRID_WIDTH: isize = 50;
+const GRID_HEIGHT: isize = 100;
+const FILL_PROBABILITY: f32 = 0.55;
+const SIMULATION_STEPS: usize = 4;
 pub struct MapPlugin;
 
-#[derive(Clone, Copy, PartialEq)]
+#[derive(Clone, Copy, PartialEq, Debug)]
 pub enum TileType {
     Solid,
     Empty,
@@ -61,7 +61,7 @@ impl Plugin for MapPlugin {
 
 fn initialize_world_grid(mut commands: Commands) {
     println!("Generating map using Cellular Automata algorithm");
-    // Initialize and empty map
+    // Initialize an empty map
     let mut tiles = vec![vec![Empty; GRID_WIDTH as usize]; GRID_HEIGHT as usize];
     let mut rng = rand::thread_rng();
 
@@ -75,8 +75,8 @@ fn initialize_world_grid(mut commands: Commands) {
     }
 
     // Next iterations: make simulations
-    for _ in 0..SIMULATION_STEPS {
-        tiles = simulation(&mut tiles);
+    for s in 0..SIMULATION_STEPS {
+        tiles = simulation(&mut tiles, s);
     }
 
     commands.insert_resource(WorldGrid {
@@ -85,31 +85,32 @@ fn initialize_world_grid(mut commands: Commands) {
     });
 }
 
-fn simulation(tiles: &Vec<Vec<TileType>>) -> Vec<Vec<TileType>> {
+fn simulation(tiles: &Vec<Vec<TileType>>, index: usize) -> Vec<Vec<TileType>> {
     let mut iterated_tiles = tiles.clone();
 
     for y in 0..GRID_HEIGHT as usize {
         for x in 0..GRID_WIDTH as usize {
             let solid_neighbors = count_solid_neighbors(&tiles, x, y);
             iterated_tiles[y][x] = match (tiles[y][x], solid_neighbors) {
-                (Solid, n) if n < 4 => Empty,
+                (Solid, n) if n < 3 => Empty,
                 (Empty, n) if n > 4 => Solid,
                 (current, _) => current,
             };
         }
     }
+    iterated_tiles[0][index] = Solid;
     iterated_tiles
 }
 
 fn count_solid_neighbors(tiles: &Vec<Vec<TileType>>, x: usize, y: usize) -> usize {
     let mut solid_neighbors = 0;
-    for i in -1isize..1 {
-        for j in -1isize..1 {
+    for i in -1isize..=1 {
+        for j in -1isize..=1 {
             if i == 0 && j == 0 {
                 continue;
             }
-            let adjx = x as isize + i;
-            let adjy = y as isize + j;
+            let adjx = x as isize + j;
+            let adjy = y as isize + i;
             if (adjx >= GRID_WIDTH || adjy >= GRID_HEIGHT)
                 || (adjx < 0 || adjy < 0)
                 || tiles[adjy as usize][adjx as usize] == Solid
@@ -128,9 +129,9 @@ fn render_map(
 ) {
     for x in -GRID_WIDTH / 2..GRID_WIDTH / 2 {
         for y in -GRID_HEIGHT..0 {
-            println!("index {}", y.abs());
-            match &world_grid.tiles[(y.abs()-1) as usize][x.abs() as usize]
-            {
+            let tile_type =
+                &world_grid.tiles[(y + GRID_HEIGHT) as usize][(x + (GRID_WIDTH / 2)) as usize];
+            match tile_type {
                 Solid => {
                     let entity = commands
                         .spawn((
