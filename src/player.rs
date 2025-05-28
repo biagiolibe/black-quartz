@@ -1,14 +1,14 @@
-use crate::BlackQuartzCamera;
-use crate::map::{TILE_SIZE, Tile, WorldGrid};
-use crate::prelude::{GameAssets, GameState, world_to_grid_position};
+use crate::map::{Tile, WorldGrid, TILE_SIZE};
+use crate::prelude::{world_to_grid_position, GameAssets, GameState};
 use bevy::prelude::*;
-use bevy::window::PrimaryWindow;
 use bevy_rapier2d::prelude::{
     ActiveEvents, Collider, CollisionEvent, GravityScale, LockedAxes, RigidBody, Velocity,
 };
 
 pub const PLAYER_DRILLING_STRENGTH: f32 = 1.0; //TODO: add as component of the player
-pub const PLAYER_SPEED_FACTOR: f32 = 300.0; //TODO: add as component of the player
+
+pub const PLAYER_ARMOR_RESISTANCE: f32 = 1.0; //TODO: add as component of the player and rename
+pub const PLAYER_SPEED_FACTOR: f32 = 200.0; //TODO: add as component of the player
 pub struct PlayerPlugin;
 
 #[derive(Component)]
@@ -69,13 +69,11 @@ fn spawn_player(mut commands: Commands, game_assets: Res<GameAssets>) {
         ))
         .insert(LockedAxes::ROTATION_LOCKED);
 }
-fn move_player(
+pub fn move_player(
     keyboard_input: Res<ButtonInput<KeyCode>>,
-    mut query_player: Query<(&mut Velocity, &Transform), With<Player>>,
-    mut query_camera: Query<(&mut Transform, &Camera), (With<BlackQuartzCamera>, Without<Player>)>,
-    windows: Query<&Window, With<PrimaryWindow>>,
+    mut query_player: Query<&mut Velocity, With<Player>>
 ) {
-    if let Ok((mut velocity, player_pos)) = query_player.get_single_mut() {
+    if let Ok(mut velocity) = query_player.get_single_mut() {
         keyboard_input
             .get_pressed()
             .fold(Vec2::ZERO, |mut direction, key| {
@@ -91,15 +89,6 @@ fn move_player(
                 }
                 direction
             });
-        //
-
-        // Camera handling
-        let window = windows.single();
-
-        let (mut camera_pos, camera) = query_camera.single_mut();
-        let x_pos = (player_pos.translation.x).min(window.width());
-        let y_pos = (player_pos.translation.y).min(window.height());
-        camera_pos.translation = Vec3::new(x_pos, y_pos, camera_pos.translation.z);
     }
 }
 

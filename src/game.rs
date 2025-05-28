@@ -23,9 +23,10 @@ impl Plugin for GamePlugin {
             .add_plugins((
                 LoadingPlugin,
                 MenuPlugin,
-                PlayerPlugin,
+                CameraPlugin,
                 MapPlugin,
-                HUDPlugin
+                HUDPlugin,
+                PlayerPlugin
             ));
 /*
         #[cfg(debug_assertions)]

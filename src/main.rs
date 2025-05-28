@@ -4,6 +4,7 @@ mod loading;
 mod map;
 mod menu;
 mod player;
+mod camera;
 
 mod prelude {
     pub use crate::game::*;
@@ -12,6 +13,7 @@ mod prelude {
     pub use crate::map::*;
     pub use crate::menu::*;
     pub use crate::player::*;
+    pub use crate::camera::*;
 }
 
 use bevy::prelude::*;
@@ -38,59 +40,5 @@ fn main() {
             //RapierDebugRenderPlugin::default(),
         ))
         .add_plugins(GamePlugin)
-        .add_systems(Startup, setup)
         .run();
-}
-
-fn setup(
-    mut commands: Commands,
-    mut images: ResMut<Assets<Image>>,
-    windows: Query<&Window, With<PrimaryWindow>>,
-) {
-    //TODO move to a plugin?
-    // Camera
-    commands.spawn((
-        Camera2d::default(),
-        OrthographicProjection {
-            near: -1000.0,
-            far: 1000.0,
-            viewport_origin: Vec2::new(0.5, 0.5),
-            scaling_mode: Default::default(),
-            scale: 3.0,
-            area: Default::default(),
-        },
-        BlackQuartzCamera,
-    ));
-}
-
-fn setup_borders(mut commands: Commands, window_query: Query<&Window, With<PrimaryWindow>>) {
-    let window = window_query.single();
-
-    //Top border
-    commands.spawn((
-        RigidBody::Fixed,
-        Collider::cuboid(window.resolution.width() / 2.0, 5.0),
-        Transform::from_xyz(0.0, window.height() / 2.0, 0.0),
-    ));
-
-    //Bottom border
-    commands.spawn((
-        RigidBody::Fixed,
-        Collider::cuboid(window.resolution.width() / 2.0, 5.0),
-        Transform::from_xyz(0.0, -(window.height() / 2.0), 0.0),
-    ));
-
-    //Left border
-    commands.spawn((
-        RigidBody::Fixed,
-        Collider::cuboid(5.0, window.resolution.height() / 2.0),
-        Transform::from_xyz(-(window.width() / 2.0), 0.0, 0.0),
-    ));
-
-    //Right border
-    commands.spawn((
-        RigidBody::Fixed,
-        Collider::cuboid(5.0, window.resolution.height() / 2.0),
-        Transform::from_xyz(window.width() / 2.0, 0.0, 0.0),
-    ));
 }
