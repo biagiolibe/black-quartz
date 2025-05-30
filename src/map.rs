@@ -53,7 +53,7 @@ impl Plugin for MapPlugin {
             Startup,
             (
                 initialize_world_grid,
-                render_map.after(initialize_world_grid),
+                (render_map, setup_borders).after(initialize_world_grid),
             )
                 .chain(),
         );
@@ -182,4 +182,34 @@ pub fn world_to_grid_position(world_position: Vec2) -> (i32, i32) {
             / TILE_SIZE)
             .trunc() as i32,
     )
+}
+
+fn setup_borders(mut commands: Commands, world_grid: Res<WorldGrid>) {
+    //Top border
+    commands.spawn((
+        RigidBody::Fixed,
+        Collider::cuboid(world_grid.map_area.max.x, 1.0),
+        Transform::from_xyz(0.0, world_grid.map_area.max.y / 2.0, 0.0),
+    ));
+
+    //Bottom border
+    commands.spawn((
+        RigidBody::Fixed,
+        Collider::cuboid(world_grid.map_area.max.x, 1.0),
+        Transform::from_xyz(0.0, world_grid.map_area.min.y / 2.0, 0.0),
+    ));
+
+    //Left border
+    commands.spawn((
+        RigidBody::Fixed,
+        Collider::cuboid(1.0, world_grid.map_area.max.y / 2.0),
+        Transform::from_xyz(world_grid.map_area.min.x, 0.0, 0.0),
+    ));
+
+    //Right border
+    commands.spawn((
+        RigidBody::Fixed,
+        Collider::cuboid(1.0, world_grid.map_area.max.y / 2.0),
+        Transform::from_xyz(world_grid.map_area.max.x, 0.0, 0.0),
+    ));
 }
