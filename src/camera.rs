@@ -48,22 +48,15 @@ fn follow_player(
         let (mut camera_pos, camera) = query_camera.single_mut();
         let camera_area = &camera.area;
         println!("camera pos {:?}", camera_pos);
-        println!(
-            "camera width corner {}",
-            camera_pos.translation.x + camera_area.max.x
-        );
-        println!(
-            "camera height corner {}",
-            camera_pos.translation.y + camera_area.max.y
-        );
 
         if player_pos.x + camera_area.max.x <= world_grid.map_area.max.x
-            && player_pos.x + camera_area.min.x >= world_grid.map_area.min.x
-            && player_pos.y + camera_area.max.y <= world_grid.map_area.max.y
-            && player_pos.y + camera_area.min.y >= world_grid.map_area.min.y
-        {
-            camera_pos.translation =
-                Vec3::new(player_pos.x, player_pos.y, camera_pos.translation.z);
+            && player_pos.x + camera_area.min.x >= world_grid.map_area.min.x {
+            camera_pos.translation.x = player_pos.x;
+        }
+
+        if player_pos.y + camera_area.max.y <= world_grid.map_area.max.y
+            && player_pos.y + camera_area.min.y >= world_grid.map_area.min.y {
+            camera_pos.translation.y = player_pos.y;
         }
     }
 }
