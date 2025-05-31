@@ -1,14 +1,11 @@
-use crate::BlackQuartzCamera;
 use crate::map::WorldGrid;
-use crate::prelude::{GRID_WIDTH, Player, TILE_SIZE, move_player};
+use crate::prelude::{move_player, Player};
+use crate::BlackQuartzCamera;
 use bevy::math::Vec2;
 use bevy::prelude::{
-    App, Camera, Camera2d, Commands, IntoSystemConfigs, OrthographicProjection, Plugin, Query, Res,
-    Startup, Transform, Update, Vec3, Window, With, Without,
+    App, Camera2d, Commands, IntoSystemConfigs, OrthographicProjection, Plugin, Query, Res,
+    Startup, Transform, Update, With, Without,
 };
-use bevy::window::PrimaryWindow;
-use bevy_rapier2d::dynamics::RigidBody;
-use bevy_rapier2d::geometry::Collider;
 
 pub struct CameraPlugin;
 
@@ -27,7 +24,7 @@ fn setup_camera(mut commands: Commands) {
             far: 1000.0,
             viewport_origin: Vec2::new(0.5, 0.5),
             scaling_mode: Default::default(),
-            scale: 0.6,
+            scale: 0.5,
             area: Default::default(),
         },
         BlackQuartzCamera,

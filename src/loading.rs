@@ -1,4 +1,3 @@
-use crate::map::TILE_SIZE;
 use crate::prelude::*;
 use bevy::prelude::*;
 
@@ -26,11 +25,11 @@ pub fn load_assets(
 ) {
     println!("Loading assets");
     //Terrain assets
-    let terrain_texture_handle: Handle<Image> = asset_server.load("textures/tileset.png");
+    let terrain_texture_handle: Handle<Image> = asset_server.load("textures/terrain.png");
     let terrain_layout = TextureAtlasLayout::from_grid(
-        UVec2::new(512, 512),
-        2,
-        2,
+        UVec2::new(170, 170),
+        6,
+        6,
         None,
         None,
     );

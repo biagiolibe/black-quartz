@@ -1,10 +1,10 @@
 use crate::map::{Tile, WorldGrid, TILE_SIZE};
 use crate::prelude::{world_to_grid_position, GameAssets, GameState};
 use bevy::prelude::*;
+use bevy_rapier2d::math::Vect;
 use bevy_rapier2d::prelude::{
     ActiveEvents, Collider, CollisionEvent, GravityScale, LockedAxes, RigidBody, Velocity,
 };
-
 pub const PLAYER_DRILLING_STRENGTH: f32 = 1.0; //TODO: add as component of the player
 
 pub const PLAYER_ARMOR_RESISTANCE: f32 = 1.0; //TODO: add as component of the player and rename
@@ -60,7 +60,7 @@ fn spawn_player(mut commands: Commands, game_assets: Res<GameAssets>) {
                 custom_size: Some(Vec2::new(TILE_SIZE, TILE_SIZE)),
                 ..default()
             },
-            Transform::from_xyz(0.0, 50.0, 0.0),
+            Transform::from_xyz(0.0, 25.0, 0.0),
             RigidBody::Dynamic,
             Collider::capsule_y((TILE_SIZE - 28.0) / 2f32, 14.0),
             ActiveEvents::COLLISION_EVENTS,

@@ -7,19 +7,19 @@ mod player;
 mod camera;
 
 mod prelude {
+    pub use crate::camera::*;
     pub use crate::game::*;
     pub use crate::hud::*;
     pub use crate::loading::*;
     pub use crate::map::*;
     pub use crate::menu::*;
     pub use crate::player::*;
-    pub use crate::camera::*;
 }
 
-use bevy::prelude::*;
-use bevy::window::{PrimaryWindow, WindowMode};
-use bevy_rapier2d::prelude::*;
 use crate::prelude::GamePlugin;
+use bevy::prelude::*;
+use bevy::window::WindowMode;
+use bevy_rapier2d::prelude::*;
 
 #[derive(Component)]
 struct BlackQuartzCamera;

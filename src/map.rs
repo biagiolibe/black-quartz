@@ -4,7 +4,7 @@ use crate::map::TileType::Solid;
 use crate::prelude::TileType::Empty;
 use bevy::prelude::*;
 use bevy_rapier2d::prelude::{ActiveEvents, Collider, RigidBody};
-use rand::{Rng, random};
+use rand::Rng;
 use std::collections::HashMap;
 
 pub const TILE_SIZE: f32 = 32.0;
@@ -84,10 +84,11 @@ fn initialize_world_grid(mut commands: Commands) {
         grid: HashMap::new(),
         tiles,
         map_area: Rect::new(
-            -(GRID_WIDTH as f32 / 2.0) * TILE_SIZE,
-            -(GRID_HEIGHT as f32) * TILE_SIZE,
-            (GRID_WIDTH as f32 / 2.0) * TILE_SIZE,
-            (GRID_HEIGHT as f32) * TILE_SIZE,
+            //subtract half of TILE_SIZE in order to align with the last tile in grid
+            -(GRID_WIDTH as f32 / 2.0) * TILE_SIZE - TILE_SIZE / 2.0,
+            -(GRID_HEIGHT as f32) * TILE_SIZE - TILE_SIZE / 2.0,
+            (GRID_WIDTH as f32 / 2.0) * TILE_SIZE - TILE_SIZE / 2.0,
+            (GRID_HEIGHT as f32) * TILE_SIZE - TILE_SIZE / 2.0,
         ),
     });
 }
@@ -146,7 +147,7 @@ fn render_map(
                                 image: game_assets.terrain_texture.clone(),
                                 texture_atlas: Some(TextureAtlas {
                                     layout: game_assets.terrain_texture_layout.clone(),
-                                    index: 0,
+                                    index: 28,
                                 }),
                                 custom_size: Some(Vec2::splat(TILE_SIZE)),
                                 ..default()
@@ -189,14 +190,14 @@ fn setup_borders(mut commands: Commands, world_grid: Res<WorldGrid>) {
     commands.spawn((
         RigidBody::Fixed,
         Collider::cuboid(world_grid.map_area.max.x, 1.0),
-        Transform::from_xyz(0.0, world_grid.map_area.max.y / 2.0, 0.0),
+        Transform::from_xyz(0.0, world_grid.map_area.max.y, 0.0),
     ));
 
     //Bottom border
     commands.spawn((
         RigidBody::Fixed,
         Collider::cuboid(world_grid.map_area.max.x, 1.0),
-        Transform::from_xyz(0.0, world_grid.map_area.min.y / 2.0, 0.0),
+        Transform::from_xyz(0.0, world_grid.map_area.min.y, 0.0),
     ));
 
     //Left border
@@ -212,4 +213,7 @@ fn setup_borders(mut commands: Commands, world_grid: Res<WorldGrid>) {
         Collider::cuboid(1.0, world_grid.map_area.max.y / 2.0),
         Transform::from_xyz(world_grid.map_area.max.x, 0.0, 0.0),
     ));
+
+    //center border
+    commands.spawn((RigidBody::Fixed, Transform::from_xyz(0.0, 0.0, 0.0)));
 }
