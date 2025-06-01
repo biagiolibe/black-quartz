@@ -44,7 +44,6 @@ fn follow_player(
         let player_pos = player_transform.translation;
         let (mut camera_pos, camera) = query_camera.single_mut();
         let camera_area = &camera.area;
-        println!("camera pos {:?}", camera_pos);
 
         if player_pos.x + camera_area.max.x <= world_grid.map_area.max.x
             && player_pos.x + camera_area.min.x >= world_grid.map_area.min.x {

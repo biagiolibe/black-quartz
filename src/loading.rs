@@ -41,7 +41,7 @@ pub fn load_assets(
         UVec2::new(512, 512),
         2,
         2,
-        None,
+        Some(UVec2::new(100, 0)),
         None,
     );
     let texture_layout_handle = texture_atlas_layouts.add(texture_layout);
