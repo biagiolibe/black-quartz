@@ -27,21 +27,21 @@ pub fn load_assets(
     //Terrain assets
     let terrain_texture_handle: Handle<Image> = asset_server.load("textures/terrain.png");
     let terrain_layout = TextureAtlasLayout::from_grid(
-        UVec2::new(170, 170),
-        6,
-        6,
+        UVec2::new(150, 150),
+        4,
+        4,
         None,
         None,
     );
     let terrain_layout_handle = texture_atlas_layouts.add(terrain_layout);
 
     //Other assets
-    let texture_handle: Handle<Image> = asset_server.load("textures/drilling_machine.png");
+    let texture_handle: Handle<Image> = asset_server.load("textures/drilling_machine_full.png");
     let texture_layout = TextureAtlasLayout::from_grid(
-        UVec2::new(512, 512),
+        UVec2::new(350, 383),
         2,
-        2,
-        Some(UVec2::new(100, 0)),
+        4,
+        None,
         None,
     );
     let texture_layout_handle = texture_atlas_layouts.add(texture_layout);

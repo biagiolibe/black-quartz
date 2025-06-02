@@ -1,9 +1,9 @@
 use crate::loading::GameAssets;
-use crate::map::RockType::Asteroid;
 use crate::map::TileType::Solid;
-use crate::prelude::TileType::Empty;
+use crate::prelude::TileType::*;
 use bevy::prelude::*;
 use bevy_rapier2d::prelude::{ActiveEvents, Collider, RigidBody};
+use noise::{NoiseFn, Perlin};
 use rand::Rng;
 use std::collections::HashMap;
 
@@ -17,12 +17,18 @@ pub struct MapPlugin;
 #[derive(Clone, Copy, PartialEq, Debug)]
 pub enum TileType {
     Solid,
+    Sand,
+    Iron,
+    Copper,
+    Gold,
+    Crystal,
     Empty,
 }
 
-#[derive(Clone, Copy, PartialEq)]
-pub enum RockType {
-    Asteroid,
+#[derive(Component, Clone, Copy, PartialEq)]
+pub struct Tile {
+    tile_type: TileType,
+    pub drilling: Drilling,
 }
 
 #[derive(Clone, Copy, PartialEq)]
@@ -35,13 +41,8 @@ pub struct Drilling {
 pub struct WorldGrid {
     pub grid: HashMap<(i32, i32), Entity>,
     pub tiles: Vec<Vec<TileType>>,
+    pub revealed_tiles: Vec<Vec<bool>>,
     pub map_area: Rect,
-}
-#[derive(Component, Clone, Copy, PartialEq)]
-pub struct Tile {
-    tile_type: TileType,
-    rock_type: RockType,
-    pub drilling: Drilling,
 }
 
 pub struct Map;
@@ -64,6 +65,7 @@ fn initialize_world_grid(mut commands: Commands) {
     println!("Generating map using Cellular Automata algorithm");
     // Initialize an empty map
     let mut tiles = vec![vec![Empty; GRID_WIDTH as usize]; GRID_HEIGHT as usize];
+    let mut revealed_tiles = vec![vec![true; GRID_WIDTH as usize]; GRID_HEIGHT as usize];
     let mut rng = rand::thread_rng();
 
     // 1st iteration: fill map with solid tiles
@@ -80,9 +82,17 @@ fn initialize_world_grid(mut commands: Commands) {
         tiles = simulation(&mut tiles, s);
     }
 
+    //Distribute materials
+    tiles = distribute_materials(&mut tiles);
+
+    //Reveal initial map portion
+    //TODO initialize
+    //revealed_tiles[(GRID_HEIGHT-1) as usize] = vec![true;GRID_WIDTH as usize];
+
     commands.insert_resource(WorldGrid {
         grid: HashMap::new(),
         tiles,
+        revealed_tiles,
         map_area: Rect::new(
             //subtract half of TILE_SIZE in order to align with the last tile in grid
             -(GRID_WIDTH as f32 / 2.0) * TILE_SIZE - TILE_SIZE / 2.0,
@@ -91,6 +101,60 @@ fn initialize_world_grid(mut commands: Commands) {
             (GRID_HEIGHT as f32) * TILE_SIZE - TILE_SIZE / 2.0,
         ),
     });
+}
+
+fn distribute_materials(tiles: &mut Vec<Vec<TileType>>) -> Vec<Vec<TileType>> {
+    let perlin = Perlin::new(0);
+    let mut materialized_tiles = tiles.clone();
+
+    for y in 0..GRID_HEIGHT as usize {
+        for x in 0..GRID_WIDTH as usize {
+            if tiles[y][x] == Empty {
+                continue;
+            }
+            // Normalizza le coordinate per ottenere un pattern ampio
+            let scale = 0.5;
+            let noise_value = perlin.get([x as f64 * scale, y as f64 * scale]);
+
+
+            // Convertilo in un valore 0.0 - 1.0
+            let noise_val = ((noise_value + 1.0) / 2.0) as f32;
+
+            // La profondità influenza la rarità
+            let depth = y as f32;
+            let mut material = Solid;
+            // Rarità controllata da profondità e noise
+            if depth > (GRID_HEIGHT - ((GRID_HEIGHT * 20)/100)) as f32 {// first 20% (as reversed for generation indexes)
+                if noise_val < 0.8 {
+                    material = Solid;
+                } else if noise_val < 0.9 {
+                    material = Sand;
+                } else {
+                    material = Copper;
+                }
+            } else if depth > (GRID_HEIGHT - ((GRID_HEIGHT * 60)/100)) as f32 {
+                if noise_val < 0.8 {
+                    material = Solid;
+                } else if noise_val < 0.9 {
+                    material = Iron;
+                } else {
+                    material = Gold;
+                }
+            } else {
+                if noise_val < 0.7 {
+                    material = Solid
+                } else if noise_val < 0.8 {
+                    material = Iron
+                } else if noise_val < 0.9 {
+                    material = Gold
+                } else {
+                    material = Crystal
+                }
+            }
+            materialized_tiles[y][x] = material;
+        }
+    }
+    materialized_tiles
 }
 
 fn simulation(tiles: &Vec<Vec<TileType>>, index: usize) -> Vec<Vec<TileType>> {
@@ -139,38 +203,107 @@ fn render_map(
         for y in -GRID_HEIGHT..0 {
             let tile_type =
                 &world_grid.tiles[(y + GRID_HEIGHT) as usize][(x + (GRID_WIDTH / 2)) as usize];
-            match tile_type {
-                Solid => {
-                    let entity = commands
-                        .spawn((
-                            Sprite {
-                                image: game_assets.terrain_texture.clone(),
-                                texture_atlas: Some(TextureAtlas {
-                                    layout: game_assets.terrain_texture_layout.clone(),
-                                    index: 28,
-                                }),
-                                custom_size: Some(Vec2::splat(TILE_SIZE)),
-                                ..default()
-                            },
-                            Transform::from_xyz(x as f32 * TILE_SIZE, y as f32 * TILE_SIZE, 0.0),
-                            RigidBody::Fixed,
-                            Collider::cuboid(TILE_SIZE / 2f32, TILE_SIZE / 2f32),
-                            ActiveEvents::COLLISION_EVENTS,
-                            Tile {
-                                tile_type: Solid,
-                                rock_type: Asteroid,
-                                drilling: Drilling {
-                                    integrity: 0.3,
-                                    hardness: 0.1,
-                                },
-                            },
-                        ))
-                        .id();
-                    world_grid.grid.insert((x as i32, y as i32), entity);
-                }
-                _ => {}
-            };
+            let revealed_tile = world_grid.revealed_tiles[(y + GRID_HEIGHT) as usize]
+                [(x + (GRID_WIDTH / 2)) as usize];
+
+            if *tile_type != Empty && revealed_tile {
+                let (tile, texture_layout_index) = get_tile_to_render(tile_type);
+                let entity = commands
+                    .spawn((
+                        Sprite {
+                            image: game_assets.terrain_texture.clone(),
+                            texture_atlas: Some(TextureAtlas {
+                                layout: game_assets.terrain_texture_layout.clone(),
+                                index: texture_layout_index,
+                            }),
+                            custom_size: Some(Vec2::splat(TILE_SIZE)),
+                            ..default()
+                        },
+                        Transform::from_xyz(x as f32 * TILE_SIZE, y as f32 * TILE_SIZE, 0.0),
+                        RigidBody::Fixed,
+                        Collider::cuboid(TILE_SIZE / 2f32, TILE_SIZE / 2f32),
+                        ActiveEvents::COLLISION_EVENTS,
+                        tile,
+                    ))
+                    .id();
+                world_grid.grid.insert((x as i32, y as i32), entity);
+            }
         }
+    }
+}
+
+fn get_tile_to_render(tile_type: &TileType) -> (Tile, usize) {
+    match tile_type {
+        Solid => (
+            Tile {
+                tile_type: Solid,
+                drilling: Drilling {
+                    integrity: 0.4,
+                    hardness: 0.1,
+                },
+            },
+            0,
+        ),
+        Sand => (
+            Tile {
+                tile_type: Sand,
+                drilling: Drilling {
+                    integrity: 0.1,
+                    hardness: 0.05,
+                },
+            },
+            3,
+        ),
+        Copper => (
+            Tile {
+                tile_type: Solid,
+                drilling: Drilling {
+                    integrity: 0.4,
+                    hardness: 0.2,
+                },
+            },
+            5,
+        ),
+        Iron => (
+            Tile {
+                tile_type: Iron,
+                drilling: Drilling {
+                    integrity: 0.6,
+                    hardness: 0.3,
+                },
+            },
+            4,
+        ),
+        Gold => (
+            Tile {
+                tile_type: Solid,
+                drilling: Drilling {
+                    integrity: 0.4,
+                    hardness: 0.2,
+                },
+            },
+            6,
+        ),
+        Crystal => (
+            Tile {
+                tile_type: Solid,
+                drilling: Drilling {
+                    integrity: 0.1,
+                    hardness: 0.07,
+                },
+            },
+            7,
+        ),
+        _ => (
+            Tile {
+                tile_type: Empty,
+                drilling: Drilling {
+                    integrity: 0.0,
+                    hardness: 0.0,
+                },
+            },
+            0,
+        ),
     }
 }
 

@@ -1,10 +1,10 @@
-use crate::map::{TILE_SIZE, Tile, WorldGrid};
+use crate::map::{Tile, WorldGrid, TILE_SIZE};
 use crate::player::DrillState::{Drilling, Falling, Flying, Idle};
-use crate::prelude::{GameAssets, GameState, world_to_grid_position};
+use crate::prelude::{world_to_grid_position, GameAssets, GameState};
 use bevy::prelude::*;
 use bevy_rapier2d::prelude::{
-    ActiveEvents, Collider, CollisionEvent, GravityScale, LockedAxes, QueryFilter, RapierContext,
-    ReadRapierContext, RigidBody, Rot, ShapeCastOptions, Velocity,
+    ActiveEvents, Collider, CollisionEvent, GravityScale, LockedAxes, QueryFilter,
+    ReadRapierContext, RigidBody, ShapeCastOptions, Velocity,
 };
 
 pub const PLAYER_DRILLING_STRENGTH: f32 = 1.0; //TODO: add as component of the player
@@ -65,7 +65,7 @@ fn spawn_player(mut commands: Commands, game_assets: Res<GameAssets>) {
                 max: 100.0,
             },
             Damage { factor: 0.05 },
-            DrillState::Idle,
+            Idle,
             Sprite {
                 image: game_assets.texture.clone(),
                 texture_atlas: Some(TextureAtlas {
@@ -96,7 +96,6 @@ pub fn move_player(
                     KeyCode::ArrowLeft => direction.x -= 1.0,
                     KeyCode::ArrowRight => direction.x += 1.0,
                     KeyCode::ArrowUp => direction.y += 1.0,
-                    KeyCode::ArrowDown => direction.y -= 1.0,
                     _ => (),
                 }
                 direction
@@ -160,7 +159,6 @@ fn drill(
                         );
                     }
                     //Update drilling state
-                    println!("Update drilling state for drilling");
                     *drill_state = Drilling;
                 } else {
                     println!(
@@ -227,7 +225,6 @@ fn falling_detection(
             },
             QueryFilter::default(),
         ) {
-            println!("Collisione tra: {:?}", toi);
             if toi.time_of_impact > 0.2 && velocity.linvel.y < -0.2 {
                 *drill_state = Falling;
             }
