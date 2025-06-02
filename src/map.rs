@@ -8,8 +8,8 @@ use rand::Rng;
 use std::collections::HashMap;
 
 pub const TILE_SIZE: f32 = 32.0;
-pub const GRID_WIDTH: isize = 50;
-pub const GRID_HEIGHT: isize = 100;
+pub const GRID_WIDTH: isize = 100;
+pub const GRID_HEIGHT: isize = 500;
 const FILL_PROBABILITY: f32 = 0.55;
 const SIMULATION_STEPS: usize = 4;
 pub struct MapPlugin;
@@ -89,6 +89,11 @@ fn initialize_world_grid(mut commands: Commands) {
     //TODO initialize
     //revealed_tiles[(GRID_HEIGHT-1) as usize] = vec![true;GRID_WIDTH as usize];
 
+    // Debug: create a temp vertically tunnel through the entire map
+    for y in 1..GRID_HEIGHT as usize {
+        tiles[y][(GRID_WIDTH/2) as usize] = Empty;
+    }
+
     commands.insert_resource(WorldGrid {
         grid: HashMap::new(),
         tiles,
@@ -113,27 +118,29 @@ fn distribute_materials(tiles: &mut Vec<Vec<TileType>>) -> Vec<Vec<TileType>> {
                 continue;
             }
             // Normalizza le coordinate per ottenere un pattern ampio
-            let scale = 0.5;
+            let scale = 0.45;
             let noise_value = perlin.get([x as f64 * scale, y as f64 * scale]);
-
-
+            
             // Convertilo in un valore 0.0 - 1.0
             let noise_val = ((noise_value + 1.0) / 2.0) as f32;
 
             // La profondità influenza la rarità
             let depth = y as f32;
             let mut material = Solid;
+            println!("noise value: {}", noise_val);
             // Rarità controllata da profondità e noise
             if depth > (GRID_HEIGHT - ((GRID_HEIGHT * 20)/100)) as f32 {// first 20% (as reversed for generation indexes)
-                if noise_val < 0.8 {
+                if noise_val < 0.7 {
                     material = Solid;
-                } else if noise_val < 0.9 {
+                } else if noise_val < 0.8 {
                     material = Sand;
-                } else {
+                } else if noise_val < 0.9 {
                     material = Copper;
+                } else {
+                    material = Iron;
                 }
-            } else if depth > (GRID_HEIGHT - ((GRID_HEIGHT * 60)/100)) as f32 {
-                if noise_val < 0.8 {
+            } else if depth > (GRID_HEIGHT - ((GRID_HEIGHT * 80)/100)) as f32 {
+                if noise_val < 0.7 {
                     material = Solid;
                 } else if noise_val < 0.9 {
                     material = Iron;

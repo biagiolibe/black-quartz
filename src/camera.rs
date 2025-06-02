@@ -24,7 +24,7 @@ fn setup_camera(mut commands: Commands) {
             far: 1000.0,
             viewport_origin: Vec2::new(0.5, 0.5),
             scaling_mode: Default::default(),
-            scale: 0.5,
+            scale: 3.0,
             area: Default::default(),
         },
         BlackQuartzCamera,
