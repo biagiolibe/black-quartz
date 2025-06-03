@@ -41,9 +41,10 @@ pub struct Drilling {
 pub struct WorldGrid {
     pub grid: HashMap<(i32, i32), Entity>,
     pub tiles: Vec<Vec<TileType>>,
-    pub revealed_tiles: Vec<Vec<bool>>,
     pub map_area: Rect,
 }
+#[derive(Component, Clone, Copy, PartialEq)]
+pub struct FovOverlay;
 
 pub struct Map;
 
@@ -65,7 +66,6 @@ fn initialize_world_grid(mut commands: Commands) {
     println!("Generating map using Cellular Automata algorithm");
     // Initialize an empty map
     let mut tiles = vec![vec![Empty; GRID_WIDTH as usize]; GRID_HEIGHT as usize];
-    let mut revealed_tiles = vec![vec![true; GRID_WIDTH as usize]; GRID_HEIGHT as usize];
     let mut rng = rand::thread_rng();
 
     // 1st iteration: fill map with solid tiles
@@ -85,19 +85,15 @@ fn initialize_world_grid(mut commands: Commands) {
     //Distribute materials
     tiles = distribute_materials(&mut tiles);
 
-    //Reveal initial map portion
-    //TODO initialize
-    //revealed_tiles[(GRID_HEIGHT-1) as usize] = vec![true;GRID_WIDTH as usize];
-
-    // Debug: create a temp vertically tunnel through the entire map
+    /* Debug: create a temp vertically tunnel through the entire map
     for y in 1..GRID_HEIGHT as usize {
-        tiles[y][(GRID_WIDTH/2) as usize] = Empty;
+        tiles[y][(GRID_WIDTH / 2) as usize] = Empty;
     }
+     */
 
     commands.insert_resource(WorldGrid {
         grid: HashMap::new(),
         tiles,
-        revealed_tiles,
         map_area: Rect::new(
             //subtract half of TILE_SIZE in order to align with the last tile in grid
             -(GRID_WIDTH as f32 / 2.0) * TILE_SIZE - TILE_SIZE / 2.0,
@@ -120,16 +116,16 @@ fn distribute_materials(tiles: &mut Vec<Vec<TileType>>) -> Vec<Vec<TileType>> {
             // Normalizza le coordinate per ottenere un pattern ampio
             let scale = 0.45;
             let noise_value = perlin.get([x as f64 * scale, y as f64 * scale]);
-            
+
             // Convertilo in un valore 0.0 - 1.0
             let noise_val = ((noise_value + 1.0) / 2.0) as f32;
 
             // La profondità influenza la rarità
             let depth = y as f32;
-            let mut material = Solid;
-            println!("noise value: {}", noise_val);
             // Rarità controllata da profondità e noise
-            if depth > (GRID_HEIGHT - ((GRID_HEIGHT * 20)/100)) as f32 {// first 20% (as reversed for generation indexes)
+            let mut material = Solid;
+            if depth > (GRID_HEIGHT - ((GRID_HEIGHT * 20) / 100)) as f32 {
+                // first 20% (as reversed for generation indexes)
                 if noise_val < 0.7 {
                     material = Solid;
                 } else if noise_val < 0.8 {
@@ -139,7 +135,7 @@ fn distribute_materials(tiles: &mut Vec<Vec<TileType>>) -> Vec<Vec<TileType>> {
                 } else {
                     material = Iron;
                 }
-            } else if depth > (GRID_HEIGHT - ((GRID_HEIGHT * 80)/100)) as f32 {
+            } else if depth > (GRID_HEIGHT - ((GRID_HEIGHT * 80) / 100)) as f32 {
                 if noise_val < 0.7 {
                     material = Solid;
                 } else if noise_val < 0.9 {
@@ -210,13 +206,22 @@ fn render_map(
         for y in -GRID_HEIGHT..0 {
             let tile_type =
                 &world_grid.tiles[(y + GRID_HEIGHT) as usize][(x + (GRID_WIDTH / 2)) as usize];
-            let revealed_tile = world_grid.revealed_tiles[(y + GRID_HEIGHT) as usize]
-                [(x + (GRID_WIDTH / 2)) as usize];
 
-            if *tile_type != Empty && revealed_tile {
-                let (tile, texture_layout_index) = get_tile_to_render(tile_type);
-                let entity = commands
-                    .spawn((
+            let entity = match tile_type {
+                Empty => commands.spawn((
+                    Sprite {
+                        custom_size: Some(Vec2::splat(TILE_SIZE)),
+                        color: match y {
+                            depth if depth < -1 => Color::srgba(0.0, 0.0, 0.0, 1.0),
+                            _ => Color::NONE,
+                        },
+                        ..default()
+                    },
+                    Transform::from_xyz(x as f32 * TILE_SIZE, y as f32 * TILE_SIZE, 0.0),
+                )),
+                _ => {
+                    let (tile, texture_layout_index) = get_tile_to_render(tile_type);
+                    commands.spawn((
                         Sprite {
                             image: game_assets.terrain_texture.clone(),
                             texture_atlas: Some(TextureAtlas {
@@ -224,6 +229,10 @@ fn render_map(
                                 index: texture_layout_index,
                             }),
                             custom_size: Some(Vec2::splat(TILE_SIZE)),
+                            color: match y {
+                                depth if depth < -1 => Color::srgba(0.0, 0.0, 0.0, 1.0),
+                                _ => Color::WHITE,
+                            },
                             ..default()
                         },
                         Transform::from_xyz(x as f32 * TILE_SIZE, y as f32 * TILE_SIZE, 0.0),
@@ -232,9 +241,10 @@ fn render_map(
                         ActiveEvents::COLLISION_EVENTS,
                         tile,
                     ))
-                    .id();
-                world_grid.grid.insert((x as i32, y as i32), entity);
+                }
             }
+                .id();
+            world_grid.grid.insert((x as i32, y as i32), entity);
         }
     }
 }
@@ -322,6 +332,14 @@ pub fn world_to_grid_position(world_position: Vec2) -> (i32, i32) {
         ((world_position.y + (world_position.y / world_position.y.abs()) * TILE_SIZE / 2.0)
             / TILE_SIZE)
             .trunc() as i32,
+    )
+}
+
+pub fn world_position_to_idx(world_position: Vec2) -> (usize, usize) {
+    let world_grid_position = world_to_grid_position(world_position);
+    (
+        (world_grid_position.0 + (GRID_WIDTH / 2) as i32) as usize,
+        (world_grid_position.1 + GRID_HEIGHT as i32) as usize
     )
 }
 

@@ -1,11 +1,13 @@
-use crate::map::{Tile, WorldGrid, TILE_SIZE};
+use crate::map::TileType::Empty;
+use crate::map::{GRID_HEIGHT, GRID_WIDTH, TILE_SIZE, Tile, WorldGrid};
 use crate::player::DrillState::{Drilling, Falling, Flying, Idle};
-use crate::prelude::{world_to_grid_position, GameAssets, GameState};
+use crate::prelude::{GameAssets, GameState, world_to_grid_position};
 use bevy::prelude::*;
 use bevy_rapier2d::prelude::{
     ActiveEvents, Collider, CollisionEvent, GravityScale, LockedAxes, QueryFilter,
     ReadRapierContext, RigidBody, ShapeCastOptions, Velocity,
 };
+use std::collections::{HashSet, VecDeque};
 
 pub const PLAYER_DRILLING_STRENGTH: f32 = 1.0; //TODO: add as component of the player
 
@@ -35,6 +37,13 @@ pub enum DrillState {
     Falling,
 }
 
+#[derive(Component, Clone, PartialEq)]
+pub struct FieldOfView {
+    visible_tiles: HashSet<(i32, i32)>,
+    visited_tiles: HashSet<(i32, i32)>,
+    radius: i32,
+}
+
 /// This plugin handles player related stuff like movement
 /// Player logic is only active during the State `GameState::Playing`
 impl Plugin for PlayerPlugin {
@@ -44,6 +53,7 @@ impl Plugin for PlayerPlugin {
                 Update,
                 (
                     update_player_sprite,
+                    update_fov,
                     (
                         move_player.run_if(in_state(GameState::Playing)),
                         drill,
@@ -81,6 +91,11 @@ fn spawn_player(mut commands: Commands, game_assets: Res<GameAssets>) {
             ActiveEvents::COLLISION_EVENTS,
             GravityScale(1.0),
             Velocity::zero(),
+            FieldOfView {
+                visible_tiles: HashSet::new(),
+                visited_tiles: HashSet::new(),
+                radius: 2,
+            },
         ))
         .insert(LockedAxes::ROTATION_LOCKED);
 }
@@ -153,6 +168,8 @@ fn drill(
                     if tile.drilling.integrity <= 0.0 {
                         commands.entity(*entity).despawn();
                         world_grid.grid.remove(&target_index);
+                        world_grid.tiles[(target_index.1 + (GRID_HEIGHT) as i32) as usize]
+                            [(target_index.0 + (GRID_WIDTH/2) as i32) as usize] = Empty;
                         println!(
                             "Drilled tile at {:?} with player on position {:?}",
                             target_index, current_position
@@ -228,6 +245,68 @@ fn falling_detection(
             if toi.time_of_impact > 0.2 && velocity.linvel.y < -0.2 {
                 *drill_state = Falling;
             }
+        }
+    }
+}
+
+pub fn update_fov(
+    mut player_query: Query<(&Transform, &mut FieldOfView), With<Player>>,
+    mut world_grid: ResMut<WorldGrid>,
+) {
+    let (player_transform, mut fov) = player_query.single_mut();
+    let player_pos = IVec2::from(world_to_grid_position(
+        player_transform.translation.truncate(),
+    ));
+
+    println!(
+        "Converted {} to grid position {}",
+        player_transform.translation.truncate(),
+        player_pos
+    );
+    let max_radius = 10; // o qualsiasi valore tu voglia
+
+    let mut queue = VecDeque::new();
+    queue.push_back((player_pos, 0));
+
+    while let Some((pos, dist)) = queue.pop_front() {
+        if dist > max_radius {
+            continue;
+        }
+        let id_x = pos.x + (GRID_WIDTH / 2) as i32;
+        let id_y = pos.y + GRID_HEIGHT as i32;
+
+        if id_x < 0
+            || id_y < 0
+            || id_x >= world_grid.tiles[0].len() as i32
+            || id_y >= world_grid.tiles.len() as i32
+        {
+            println!("out of bounds ({},{})", id_x, id_y);
+            continue;
+        }
+
+        let x = id_x as usize;
+        let y = id_y as usize;
+
+        fov.visible_tiles.insert((pos.x, pos.y));
+        if fov.visited_tiles.get(&(pos.x, pos.y)).is_some() {
+            continue;
+        }
+        fov.visited_tiles.insert((pos.x, pos.y));
+        //println!("visible_tiles {:?}", fov.visible_tiles);
+        if world_grid.tiles[id_y as usize][id_x as usize] != Empty {
+            //println!("tile in ({},{}) is not empty", pos_x, pos_y);
+            continue; // Blocca la propagazione della visibilità
+        }
+
+        let neighbors = [
+            IVec2::new(pos.x + 1, pos.y),
+            IVec2::new(pos.x - 1, pos.y),
+            IVec2::new(pos.x, pos.y + 1),
+            IVec2::new(pos.x, pos.y - 1),
+        ];
+
+        for n in neighbors {
+            queue.push_back((n, dist + 1));
         }
     }
 }
