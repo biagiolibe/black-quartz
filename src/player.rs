@@ -1,7 +1,7 @@
 use crate::map::TileType::Empty;
 use crate::map::{GRID_HEIGHT, GRID_WIDTH, TILE_SIZE, Tile, WorldGrid};
 use crate::player::DrillState::{Drilling, Falling, Flying, Idle};
-use crate::prelude::{GameAssets, GameState, world_to_grid_position};
+use crate::prelude::{GameAssets, GameState, world_grid_position_to_idx, world_to_grid_position};
 use bevy::prelude::*;
 use bevy_rapier2d::prelude::{
     ActiveEvents, Collider, CollisionEvent, GravityScale, LockedAxes, QueryFilter,
@@ -39,9 +39,10 @@ pub enum DrillState {
 
 #[derive(Component, Clone, PartialEq)]
 pub struct FieldOfView {
-    visible_tiles: HashSet<(i32, i32)>,
+    pub visible_tiles: HashSet<(i32, i32)>,
     visited_tiles: HashSet<(i32, i32)>,
     radius: i32,
+    pub(crate) dirty: bool,
 }
 
 /// This plugin handles player related stuff like movement
@@ -94,7 +95,8 @@ fn spawn_player(mut commands: Commands, game_assets: Res<GameAssets>) {
             FieldOfView {
                 visible_tiles: HashSet::new(),
                 visited_tiles: HashSet::new(),
-                radius: 2,
+                radius: 10,
+                dirty: false,
             },
         ))
         .insert(LockedAxes::ROTATION_LOCKED);
@@ -169,7 +171,7 @@ fn drill(
                         commands.entity(*entity).despawn();
                         world_grid.grid.remove(&target_index);
                         world_grid.tiles[(target_index.1 + (GRID_HEIGHT) as i32) as usize]
-                            [(target_index.0 + (GRID_WIDTH/2) as i32) as usize] = Empty;
+                            [(target_index.0 + (GRID_WIDTH / 2) as i32) as usize] = Empty;
                         println!(
                             "Drilled tile at {:?} with player on position {:?}",
                             target_index, current_position
@@ -250,59 +252,60 @@ fn falling_detection(
 }
 
 pub fn update_fov(
-    mut player_query: Query<(&Transform, &mut FieldOfView), With<Player>>,
-    mut world_grid: ResMut<WorldGrid>,
+    mut player_query: Query<(&Transform, Mut<FieldOfView>), With<Player>>,
+    world_grid: ResMut<WorldGrid>,
+    time: Res<Time>,
 ) {
     let (player_transform, mut fov) = player_query.single_mut();
     let player_pos = IVec2::from(world_to_grid_position(
         player_transform.translation.truncate(),
     ));
 
-    println!(
-        "Converted {} to grid position {}",
-        player_transform.translation.truncate(),
-        player_pos
-    );
-    let max_radius = 10; // o qualsiasi valore tu voglia
-
     let mut queue = VecDeque::new();
     queue.push_back((player_pos, 0));
 
     while let Some((pos, dist)) = queue.pop_front() {
-        if dist > max_radius {
+        if dist > fov.radius {
             continue;
         }
-        let id_x = pos.x + (GRID_WIDTH / 2) as i32;
-        let id_y = pos.y + GRID_HEIGHT as i32;
+        if fov.visited_tiles.contains(&(pos.x, pos.y)) && player_pos != pos {
+            //println!("tile already visited {:?}", pos);
+            continue;
+        }
+        // Add position to list of visited
+        fov.visited_tiles.insert((pos.x, pos.y));
 
-        if id_x < 0
-            || id_y < 0
-            || id_x >= world_grid.tiles[0].len() as i32
-            || id_y >= world_grid.tiles.len() as i32
-        {
+        let (id_x, id_y) = world_grid_position_to_idx((pos.x, pos.y));
+
+        if id_x >= world_grid.tiles[0].len() || id_y >= world_grid.tiles.len() {
             println!("out of bounds ({},{})", id_x, id_y);
             continue;
         }
+        println!(
+            "visited list {:?} on time {:?} does not contain ({},{})",
+            fov.visited_tiles,
+            time.delta(),
+            pos.x,
+            pos.y
+        );
 
-        let x = id_x as usize;
-        let y = id_y as usize;
-
+        //Add to player's fov
         fov.visible_tiles.insert((pos.x, pos.y));
-        if fov.visited_tiles.get(&(pos.x, pos.y)).is_some() {
-            continue;
-        }
-        fov.visited_tiles.insert((pos.x, pos.y));
-        //println!("visible_tiles {:?}", fov.visible_tiles);
-        if world_grid.tiles[id_y as usize][id_x as usize] != Empty {
-            //println!("tile in ({},{}) is not empty", pos_x, pos_y);
+        fov.dirty = true;
+
+        if world_grid.tiles[id_y][id_x] != Empty {
             continue; // Blocca la propagazione della visibilità
         }
 
         let neighbors = [
+            IVec2::new(pos.x + 1, pos.y + 1),
             IVec2::new(pos.x + 1, pos.y),
-            IVec2::new(pos.x - 1, pos.y),
-            IVec2::new(pos.x, pos.y + 1),
+            IVec2::new(pos.x + 1, pos.y - 1),
             IVec2::new(pos.x, pos.y - 1),
+            IVec2::new(pos.x - 1, pos.y - 1),
+            IVec2::new(pos.x - 1, pos.y),
+            IVec2::new(pos.x - 1, pos.y + 1),
+            IVec2::new(pos.x, pos.y + 1),
         ];
 
         for n in neighbors {

@@ -1,11 +1,12 @@
 use crate::loading::GameAssets;
 use crate::map::TileType::Solid;
 use crate::prelude::TileType::*;
+use crate::prelude::{FieldOfView, Player};
 use bevy::prelude::*;
 use bevy_rapier2d::prelude::{ActiveEvents, Collider, RigidBody};
 use noise::{NoiseFn, Perlin};
 use rand::Rng;
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
 pub const TILE_SIZE: f32 = 32.0;
 pub const GRID_WIDTH: isize = 100;
@@ -40,6 +41,7 @@ pub struct Drilling {
 #[derive(Resource)]
 pub struct WorldGrid {
     pub grid: HashMap<(i32, i32), Entity>,
+    pub revealed_tiles: HashSet<(i32, i32)>,
     pub tiles: Vec<Vec<TileType>>,
     pub map_area: Rect,
 }
@@ -58,7 +60,8 @@ impl Plugin for MapPlugin {
                 (render_map, setup_borders).after(initialize_world_grid),
             )
                 .chain(),
-        );
+        )
+        .add_systems(Update, update_fov_overlay);
     }
 }
 
@@ -93,6 +96,7 @@ fn initialize_world_grid(mut commands: Commands) {
 
     commands.insert_resource(WorldGrid {
         grid: HashMap::new(),
+        revealed_tiles: HashSet::new(),
         tiles,
         map_area: Rect::new(
             //subtract half of TILE_SIZE in order to align with the last tile in grid
@@ -206,7 +210,7 @@ fn render_map(
         for y in -GRID_HEIGHT..0 {
             let tile_type =
                 &world_grid.tiles[(y + GRID_HEIGHT) as usize][(x + (GRID_WIDTH / 2)) as usize];
-
+            let (tile, texture_layout_index) = get_tile_to_render(tile_type);
             let entity = match tile_type {
                 Empty => commands.spawn((
                     Sprite {
@@ -218,9 +222,9 @@ fn render_map(
                         ..default()
                     },
                     Transform::from_xyz(x as f32 * TILE_SIZE, y as f32 * TILE_SIZE, 0.0),
+                    tile,
                 )),
                 _ => {
-                    let (tile, texture_layout_index) = get_tile_to_render(tile_type);
                     commands.spawn((
                         Sprite {
                             image: game_assets.terrain_texture.clone(),
@@ -243,8 +247,32 @@ fn render_map(
                     ))
                 }
             }
-                .id();
+            .id();
             world_grid.grid.insert((x as i32, y as i32), entity);
+        }
+    }
+}
+
+fn update_fov_overlay(
+    mut fov_query: Query<&mut FieldOfView, With<Player>>,
+    mut query_tiles: Query<(&mut Sprite, &Tile), With<Tile>>,
+    mut world_grid: ResMut<WorldGrid>,
+) {
+    if let Ok(mut fov) = fov_query.get_single_mut() {
+        if fov.dirty {
+            fov.visible_tiles.iter().for_each(|(x, y)| {
+                if !world_grid.revealed_tiles.contains(&(*x, *y)) {
+                    if let Some(entity) = world_grid.grid.get(&(*x, *y)) {
+                        let (mut sprite, tile) = query_tiles.get_mut(*entity).unwrap();
+                        match tile.tile_type {
+                            Empty => sprite.color = Color::NONE,
+                            _ => sprite.color = Color::WHITE,
+                        }
+                    }
+                    world_grid.revealed_tiles.insert((*x, *y));
+                }
+            });
+            fov.dirty = false;
         }
     }
 }
@@ -335,11 +363,10 @@ pub fn world_to_grid_position(world_position: Vec2) -> (i32, i32) {
     )
 }
 
-pub fn world_position_to_idx(world_position: Vec2) -> (usize, usize) {
-    let world_grid_position = world_to_grid_position(world_position);
+pub fn world_grid_position_to_idx(world_grid_position: (i32, i32)) -> (usize, usize) {
     (
         (world_grid_position.0 + (GRID_WIDTH / 2) as i32) as usize,
-        (world_grid_position.1 + GRID_HEIGHT as i32) as usize
+        (world_grid_position.1 + GRID_HEIGHT as i32) as usize,
     )
 }
 
