@@ -1,7 +1,7 @@
 use crate::loading::GameAssets;
 use crate::map::TileType::Solid;
 use crate::prelude::TileType::*;
-use crate::prelude::{FieldOfView, Player};
+use crate::prelude::{FieldOfView, Item, Player};
 use bevy::prelude::*;
 use bevy_rapier2d::prelude::{ActiveEvents, Collider, RigidBody};
 use noise::{NoiseFn, Perlin};
@@ -26,9 +26,37 @@ pub enum TileType {
     Empty,
 }
 
+impl TileType {
+    pub fn to_item(&self) -> Option<Item> {
+        match self {
+            Solid | Sand | Empty => None,
+            Iron => Some(Item{
+                id: "iron".to_string(),
+                name: "Iron".to_string(),
+                quantity: 1,
+            }),
+            Copper => Some(Item{
+                id: "copper".to_string(),
+                name: "Copper".to_string(),
+                quantity: 1,
+            }),
+            Gold => Some(Item{
+                id: "gold".to_string(),
+                name: "Gold".to_string(),
+                quantity: 1,
+            }),
+            Crystal => Some(Item{
+                id: "crystal".to_string(),
+                name: "Crystal".to_string(),
+                quantity: 1,
+            }),
+        }
+    }
+}
+
 #[derive(Component, Clone, Copy, PartialEq)]
 pub struct Tile {
-    tile_type: TileType,
+    pub tile_type: TileType,
     pub drilling: Drilling,
 }
 
@@ -278,6 +306,7 @@ fn update_fov_overlay(
 }
 
 fn get_tile_to_render(tile_type: &TileType) -> (Tile, usize) {
+    //TODO use template with RON
     match tile_type {
         Solid => (
             Tile {
@@ -301,7 +330,7 @@ fn get_tile_to_render(tile_type: &TileType) -> (Tile, usize) {
         ),
         Copper => (
             Tile {
-                tile_type: Solid,
+                tile_type: Copper,
                 drilling: Drilling {
                     integrity: 0.4,
                     hardness: 0.2,
@@ -321,7 +350,7 @@ fn get_tile_to_render(tile_type: &TileType) -> (Tile, usize) {
         ),
         Gold => (
             Tile {
-                tile_type: Solid,
+                tile_type: Gold,
                 drilling: Drilling {
                     integrity: 0.4,
                     hardness: 0.2,
@@ -331,7 +360,7 @@ fn get_tile_to_render(tile_type: &TileType) -> (Tile, usize) {
         ),
         Crystal => (
             Tile {
-                tile_type: Solid,
+                tile_type: Crystal,
                 drilling: Drilling {
                     integrity: 0.1,
                     hardness: 0.07,

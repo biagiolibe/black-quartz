@@ -1,7 +1,7 @@
 use crate::map::TileType::Empty;
-use crate::map::{GRID_HEIGHT, GRID_WIDTH, TILE_SIZE, Tile, WorldGrid};
+use crate::map::{Tile, WorldGrid, TILE_SIZE};
 use crate::player::DrillState::{Drilling, Falling, Flying, Idle};
-use crate::prelude::{GameAssets, GameState, world_grid_position_to_idx, world_to_grid_position};
+use crate::prelude::{world_grid_position_to_idx, world_to_grid_position, GameAssets, GameState};
 use bevy::prelude::*;
 use bevy_rapier2d::prelude::{
     ActiveEvents, Collider, CollisionEvent, GravityScale, LockedAxes, QueryFilter,
@@ -45,7 +45,20 @@ pub struct FieldOfView {
     pub(crate) dirty: bool,
 }
 
-/// This plugin handles player related stuff like movement
+#[derive(Component)]
+pub struct Item {
+    pub id: String,
+    pub name: String,
+    pub quantity: usize,
+}
+
+#[derive(Component)]
+pub struct Inventory {
+    pub(crate) items: Vec<Item>,
+    capacity: usize,
+}
+
+/// This plugin handles player-related stuff like movement
 /// Player logic is only active during the State `GameState::Playing`
 impl Plugin for PlayerPlugin {
     fn build(&self, app: &mut App) {
@@ -98,6 +111,10 @@ fn spawn_player(mut commands: Commands, game_assets: Res<GameAssets>) {
                 radius: 10,
                 dirty: false,
             },
+            Inventory {
+                items: Vec::new(),
+                capacity: 10,
+            },
         ))
         .insert(LockedAxes::ROTATION_LOCKED);
 }
@@ -145,11 +162,11 @@ fn drill(
     time: Res<Time>,
     mut commands: Commands,
     keyboard_input: Res<ButtonInput<KeyCode>>,
-    mut player: Query<(&Transform, &mut DrillState), With<Player>>,
+    mut player: Query<(&Transform, &mut Inventory, &mut DrillState), With<Player>>,
     mut world_grid: ResMut<WorldGrid>,
     mut query_tile: Query<(&mut Tile, &Transform), With<Tile>>,
 ) {
-    if let Ok((transform, mut drill_state)) = player.get_single_mut() {
+    if let Ok((transform, mut inventory, mut drill_state)) = player.get_single_mut() {
         let position = transform.translation.truncate();
         let current_position = world_to_grid_position(position);
 
@@ -170,12 +187,19 @@ fn drill(
                     if tile.drilling.integrity <= 0.0 {
                         commands.entity(*entity).despawn();
                         world_grid.grid.remove(&target_index);
-                        world_grid.tiles[(target_index.1 + (GRID_HEIGHT) as i32) as usize]
-                            [(target_index.0 + (GRID_WIDTH / 2) as i32) as usize] = Empty;
+                        let grid_id = world_grid_position_to_idx((target_index.0, target_index.1));
+                        world_grid.tiles[grid_id.1][grid_id.0] = Empty;
                         println!(
                             "Drilled tile at {:?} with player on position {:?}",
                             target_index, current_position
                         );
+                        //add item to inventory
+                        if let Some(item) = tile.tile_type.to_item() {
+                            if inventory.items.len() + item.quantity <= inventory.capacity {
+                                println!("add to inventory");
+                                inventory.items.push(item);
+                            }
+                        }
                     }
                     //Update drilling state
                     *drill_state = Drilling;
@@ -251,6 +275,7 @@ fn falling_detection(
     }
 }
 
+//TODO improve in some way
 pub fn update_fov(
     mut player_query: Query<(&Transform, Mut<FieldOfView>), With<Player>>,
     world_grid: ResMut<WorldGrid>,
@@ -281,14 +306,7 @@ pub fn update_fov(
             println!("out of bounds ({},{})", id_x, id_y);
             continue;
         }
-        println!(
-            "visited list {:?} on time {:?} does not contain ({},{})",
-            fov.visited_tiles,
-            time.delta(),
-            pos.x,
-            pos.y
-        );
-
+        
         //Add to player's fov
         fov.visible_tiles.insert((pos.x, pos.y));
         fov.dirty = true;
