@@ -305,17 +305,19 @@ pub fn update_fov(
 
     let mut queue = VecDeque::new();
     queue.push_back((player_pos, 0));
+    let mut visited = vec![player_pos];
 
     while let Some((pos, dist)) = queue.pop_front() {
         if dist > fov.radius {
             continue;
         }
-        if fov.visited_tiles.contains(&(pos.x, pos.y)) && player_pos != pos {
+        if visited.contains(&pos) && player_pos != pos {
             //println!("tile already visited {:?}", pos);
             continue;
         }
         // Add position to list of visited
-        fov.visited_tiles.insert((pos.x, pos.y));
+        //fov.visited_tiles.insert((pos.x, pos.y));
+        visited.push(pos);
 
         let (id_x, id_y) = world_grid_position_to_idx((pos.x, pos.y));
 
