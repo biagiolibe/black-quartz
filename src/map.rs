@@ -116,11 +116,11 @@ fn initialize_world_grid(mut commands: Commands) {
     //Distribute materials
     tiles = distribute_materials(&mut tiles);
 
-    /* Debug: create a temp vertically tunnel through the entire map
+    // Debug: create a temp vertically tunnel through the entire map
     for y in 1..GRID_HEIGHT as usize {
         tiles[y][(GRID_WIDTH / 2) as usize] = Empty;
     }
-     */
+
 
     commands.insert_resource(WorldGrid {
         grid: HashMap::new(),

@@ -54,8 +54,28 @@ pub struct Item {
 
 #[derive(Component)]
 pub struct Inventory {
-    pub(crate) items: Vec<Item>,
+    pub items: Vec<Item>,
     capacity: usize,
+}
+
+impl Inventory {
+    fn add_item(&mut self, new_item: Item) {
+        if self.size() + new_item.quantity <= self.capacity {
+            if let Some(existing) = self.items.iter_mut().find(|i| i.id == new_item.id) {
+                existing.quantity += new_item.quantity;
+            } else{
+                self.items.push(new_item);
+            }
+        }
+        else {
+            println!("Inventory full!");
+        }
+
+    }
+
+    pub(crate) fn size(&self) -> usize {
+        self.items.iter().map(|i| i.quantity).sum()
+    }
 }
 
 /// This plugin handles player-related stuff like movement
@@ -195,10 +215,7 @@ fn drill(
                         );
                         //add item to inventory
                         if let Some(item) = tile.tile_type.to_item() {
-                            if inventory.items.len() + item.quantity <= inventory.capacity {
-                                println!("add to inventory");
-                                inventory.items.push(item);
-                            }
+                            inventory.add_item(item);
                         }
                     }
                     //Update drilling state
@@ -303,7 +320,7 @@ pub fn update_fov(
         let (id_x, id_y) = world_grid_position_to_idx((pos.x, pos.y));
 
         if id_x >= world_grid.tiles[0].len() || id_y >= world_grid.tiles.len() {
-            println!("out of bounds ({},{})", id_x, id_y);
+            //println!("out of bounds ({},{})", id_x, id_y);
             continue;
         }
         
