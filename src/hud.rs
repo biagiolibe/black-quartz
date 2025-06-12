@@ -131,6 +131,6 @@ fn update_hud(
     }
     if let Ok(inventory_text_entity) = hud_inventory_text.get_single() {
         let inventory = player_stats.3;
-        *text_writer.text(inventory_text_entity, 1) = format!("{}", inventory.size());
+        *text_writer.text(inventory_text_entity, 1) = format!("{:?}", inventory.print_items());
     }
 }

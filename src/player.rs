@@ -1,7 +1,7 @@
 use crate::map::TileType::Empty;
-use crate::map::{Tile, WorldGrid, TILE_SIZE};
+use crate::map::{TILE_SIZE, Tile, WorldGrid};
 use crate::player::DrillState::{Drilling, Falling, Flying, Idle};
-use crate::prelude::{world_grid_position_to_idx, world_to_grid_position, GameAssets, GameState};
+use crate::prelude::{GameAssets, GameState, world_grid_position_to_idx, world_to_grid_position};
 use bevy::prelude::*;
 use bevy_rapier2d::prelude::{
     ActiveEvents, Collider, CollisionEvent, GravityScale, LockedAxes, QueryFilter,
@@ -40,9 +40,8 @@ pub enum DrillState {
 #[derive(Component, Clone, PartialEq)]
 pub struct FieldOfView {
     pub visible_tiles: HashSet<(i32, i32)>,
-    visited_tiles: HashSet<(i32, i32)>,
     radius: i32,
-    pub(crate) dirty: bool,
+    pub dirty: bool,
 }
 
 #[derive(Component)]
@@ -63,18 +62,24 @@ impl Inventory {
         if self.size() + new_item.quantity <= self.capacity {
             if let Some(existing) = self.items.iter_mut().find(|i| i.id == new_item.id) {
                 existing.quantity += new_item.quantity;
-            } else{
+            } else {
                 self.items.push(new_item);
             }
-        }
-        else {
+        } else {
             println!("Inventory full!");
         }
-
     }
 
-    pub(crate) fn size(&self) -> usize {
+    pub fn size(&self) -> usize {
         self.items.iter().map(|i| i.quantity).sum()
+    }
+
+    pub fn print_items(&self) -> String {
+        self.items
+            .iter()
+            .map(|i| format!("{} x{}", i.name, i.quantity))
+            .collect::<Vec<_>>()
+            .join(",")
     }
 }
 
@@ -127,7 +132,6 @@ fn spawn_player(mut commands: Commands, game_assets: Res<GameAssets>) {
             Velocity::zero(),
             FieldOfView {
                 visible_tiles: HashSet::new(),
-                visited_tiles: HashSet::new(),
                 radius: 10,
                 dirty: false,
             },
@@ -278,7 +282,7 @@ fn falling_detection(
             player_pos,
             0.0,
             Vec2::NEG_Y,
-            &Collider::cuboid(8.0, 16.0), // Un piccolo rettangolo sotto il player
+            &Collider::cuboid(8.0, 16.0), // A little rectangle under the player
             ShapeCastOptions {
                 stop_at_penetration: false,
                 ..default()
@@ -296,7 +300,6 @@ fn falling_detection(
 pub fn update_fov(
     mut player_query: Query<(&Transform, Mut<FieldOfView>), With<Player>>,
     world_grid: ResMut<WorldGrid>,
-    time: Res<Time>,
 ) {
     let (player_transform, mut fov) = player_query.single_mut();
     let player_pos = IVec2::from(world_to_grid_position(
@@ -316,7 +319,6 @@ pub fn update_fov(
             continue;
         }
         // Add position to list of visited
-        //fov.visited_tiles.insert((pos.x, pos.y));
         visited.push(pos);
 
         let (id_x, id_y) = world_grid_position_to_idx((pos.x, pos.y));
@@ -325,7 +327,7 @@ pub fn update_fov(
             //println!("out of bounds ({},{})", id_x, id_y);
             continue;
         }
-        
+
         //Add to player's fov
         fov.visible_tiles.insert((pos.x, pos.y));
         fov.dirty = true;
