@@ -4,8 +4,8 @@ use crate::player::DrillState::{Drilling, Falling, Flying, Idle};
 use crate::prelude::{GameAssets, GameState, world_grid_position_to_idx, world_to_grid_position};
 use bevy::prelude::*;
 use bevy_rapier2d::prelude::{
-    ActiveEvents, Collider, CollisionEvent, GravityScale, LockedAxes, QueryFilter,
-    ReadRapierContext, RigidBody, ShapeCastOptions, Velocity,
+    ActiveEvents, Collider, CollisionEvent, ContactForceEvent, GravityScale, LockedAxes,
+    QueryFilter, ReadRapierContext, RigidBody, ShapeCastOptions, Velocity,
 };
 use std::collections::{HashSet, VecDeque};
 
@@ -171,6 +171,7 @@ fn update_player_sprite(
     mut query: Query<(&DrillState, &mut Sprite), (With<Player>, Changed<DrillState>)>,
 ) {
     if let Ok((state, mut sprite)) = query.get_single_mut() {
+        println!("drill state: {:?}", state);
         if let Some(texture_sprite) = &mut sprite.texture_atlas {
             match state {
                 Idle => texture_sprite.index = 2,
@@ -194,13 +195,18 @@ fn drill(
         let position = transform.translation.truncate();
         let current_position = world_to_grid_position(position);
 
-        let direction = keyboard_input.get_pressed().find_map(|key| match key {
+        let mut direction = keyboard_input.get_pressed().find_map(|key| match key {
             KeyCode::ArrowLeft => Some((-1, 0)),
             KeyCode::ArrowRight => Some((1, 0)),
             KeyCode::ArrowDown => Some((0, -1)),
             _ => None,
         });
+        if *drill_state != Idle && *drill_state != Drilling {
+            println!("no drill to be done");
+            direction = None;
+        }
         if let Some((dx, dy)) = direction {
+            println!("drill direction: {:?}", (dx, dy));
             let target_index = (current_position.0 + dx, current_position.1 + dy);
 
             if let Some(entity) = world_grid.grid.get(&target_index) {
@@ -213,10 +219,7 @@ fn drill(
                         world_grid.grid.remove(&target_index);
                         let grid_id = world_grid_position_to_idx((target_index.0, target_index.1));
                         world_grid.tiles[grid_id.1][grid_id.0] = Empty;
-                        println!(
-                            "Drilled tile at {:?} with player on position {:?}",
-                            target_index, current_position
-                        );
+
                         //add item to inventory
                         if let Some(item) = tile.tile_type.to_item() {
                             inventory.add_item(item);
@@ -237,33 +240,40 @@ fn drill(
 
 fn collision_detection(
     mut collision_events: EventReader<CollisionEvent>,
-    mut player: Query<(&Velocity, &mut Health, &Damage, &mut DrillState), With<Player>>,
-    tiles: Query<&Tile, With<Tile>>,
+    mut player: Query<(&Velocity, &mut Health, &Damage, &mut DrillState, &Transform), With<Player>>,
+    tiles: Query<&Transform, With<Tile>>,
 ) {
     for event in collision_events.read() {
         match event {
-            CollisionEvent::Started(entity1, entity2, _) => {
-                let (player_entity, _) =
-                    if player.get(*entity1).is_ok() && tiles.get(*entity2).is_ok() {
-                        (*entity1, *entity2)
-                    } else if player.get(*entity2).is_ok() && tiles.get(*entity1).is_ok() {
-                        (*entity2, *entity1)
+            CollisionEvent::Started(collider1, collider2, _) => {
+                let (player_entity, tile_entity) =
+                    if player.get(*collider1).is_ok() && tiles.get(*collider2).is_ok() {
+                        (*collider1, *collider2)
+                    } else if player.get(*collider2).is_ok() && tiles.get(*collider1).is_ok() {
+                        (*collider2, *collider1)
                     } else {
                         continue;
                     };
 
-                let (velocity, mut health, damage, mut drill_state) =
+                let (velocity, mut health, damage, mut drill_state, player_pos) =
                     player.get_mut(player_entity).unwrap();
+                let tile_transform = tiles.get(tile_entity).unwrap();
+                
+                let grid_tile_pos = world_to_grid_position(tile_transform.translation.truncate());
+                let grid_player_pos = world_to_grid_position(player_pos.translation.truncate());
 
-                *drill_state = Idle;
-                let impact_speed = velocity.linvel.y.abs();
-                if impact_speed > 300.0 {
-                    let damage_amount = impact_speed * damage.factor;
-                    health.current -= damage_amount;
-                    println!(
-                        "Player collision detected, impact speed {:?}, damage {:?}, player integrity {:?}",
-                        impact_speed, damage_amount, health.current
-                    );
+                if grid_tile_pos.0 == grid_player_pos.0 {
+                    // collision from bottom
+                    *drill_state = Idle;
+                    let impact_speed = velocity.linvel.y.abs();
+                    if impact_speed > 300.0 {
+                        let damage_amount = impact_speed * damage.factor;
+                        health.current -= damage_amount;
+                        println!(
+                            "Player collision detected, impact speed {:?}, damage {:?}, player integrity {:?}",
+                            impact_speed, damage_amount, health.current
+                        );
+                    }
                 }
             }
             _ => {}
