@@ -4,7 +4,7 @@ use crate::player::DrillState::{Drilling, Falling, Flying, Idle};
 use crate::prelude::{GameAssets, GameState, world_grid_position_to_idx, world_to_grid_position};
 use bevy::prelude::*;
 use bevy_rapier2d::prelude::{
-    ActiveEvents, Collider, CollisionEvent, ContactForceEvent, GravityScale, LockedAxes,
+    ActiveEvents, Collider, CollisionEvent, ContactForceEvent, Damping, GravityScale, LockedAxes,
     QueryFilter, ReadRapierContext, RigidBody, ShapeCastOptions, Velocity,
 };
 use std::collections::{HashSet, VecDeque};
@@ -12,7 +12,8 @@ use std::collections::{HashSet, VecDeque};
 pub const PLAYER_DRILLING_STRENGTH: f32 = 1.0; //TODO: add as component of the player
 
 pub const PLAYER_ARMOR_RESISTANCE: f32 = 1.0; //TODO: add as component of the player and rename
-pub const PLAYER_SPEED_FACTOR: f32 = 200.0; //TODO: add as component of the player
+pub const PLAYER_GROUND_SPEED_FACTOR: f32 = 200.0; //TODO: add as component of the player
+pub const PLAYER_FLYING_SPEED_FACTOR: f32 = 200.0; //TODO: add as component of the player
 pub struct PlayerPlugin;
 
 #[derive(Component)]
@@ -159,8 +160,11 @@ pub fn move_player(
                 direction
             });
         if direction != Vec2::ZERO {
-            velocity.linvel = direction.normalize() * PLAYER_SPEED_FACTOR;
-            if velocity.linvel.y > 0.0 {
+            if direction.x != 0.0 {
+                velocity.linvel.x = direction.x * PLAYER_GROUND_SPEED_FACTOR
+            }
+            if direction.y != 0.0 {
+                velocity.linvel.y = direction.y * PLAYER_FLYING_SPEED_FACTOR;
                 *drill_state = Flying;
             }
         }
@@ -202,11 +206,9 @@ fn drill(
             _ => None,
         });
         if *drill_state != Idle && *drill_state != Drilling {
-            println!("no drill to be done");
             direction = None;
         }
         if let Some((dx, dy)) = direction {
-            println!("drill direction: {:?}", (dx, dy));
             let target_index = (current_position.0 + dx, current_position.1 + dy);
 
             if let Some(entity) = world_grid.grid.get(&target_index) {
@@ -258,7 +260,7 @@ fn collision_detection(
                 let (velocity, mut health, damage, mut drill_state, player_pos) =
                     player.get_mut(player_entity).unwrap();
                 let tile_transform = tiles.get(tile_entity).unwrap();
-                
+
                 let grid_tile_pos = world_to_grid_position(tile_transform.translation.truncate());
                 let grid_player_pos = world_to_grid_position(player_pos.translation.truncate());
 
@@ -299,7 +301,7 @@ fn falling_detection(
             },
             QueryFilter::default(),
         ) {
-            if toi.time_of_impact > 0.2 && velocity.linvel.y < -0.2 {
+            if toi.time_of_impact > 1.0 && velocity.linvel.y < -1.0 {
                 *drill_state = Falling;
             }
         }
