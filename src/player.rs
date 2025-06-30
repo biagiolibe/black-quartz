@@ -1,10 +1,10 @@
 use crate::map::TileType::Empty;
-use crate::map::{Tile, WorldGrid, TILE_SIZE};
+use crate::map::{TILE_SIZE, Tile, WorldGrid};
 use crate::player::DrillState::{Drilling, Falling, Flying, Idle};
-use crate::prelude::{world_grid_position_to_idx, world_to_grid_position, GameAssets, GameState};
+use crate::prelude::{GameAssets, GameState, world_grid_position_to_idx, world_to_grid_position};
 use bevy::prelude::*;
 use bevy_rapier2d::prelude::{
-    ActiveEvents, Collider, CollisionEvent, GravityScale, LockedAxes, QueryFilter,
+    ActiveEvents, Collider, CollisionEvent, Damping, GravityScale, LockedAxes, QueryFilter,
     ReadRapierContext, RigidBody, ShapeCastOptions, Velocity,
 };
 use std::collections::{HashSet, VecDeque};
@@ -16,6 +16,7 @@ pub struct Player;
 #[derive(Component, PartialEq, Debug, Clone, Copy)]
 pub struct PlayerAttributes {
     drill_power: f32,
+    damage_factor: f32,
     armor_resistance: f32,
     ground_speed_factor: f32,
     flying_speed_factor: f32,
@@ -26,10 +27,11 @@ impl PlayerAttributes {
     pub fn default() -> Self {
         PlayerAttributes {
             drill_power: 1.0,
+            damage_factor: 0.05, //TODO deprecate in flavor of armor_resistance
             armor_resistance: 1.0,
             ground_speed_factor: 200.0,
             flying_speed_factor: 200.0,
-            fuel_efficiency: 1.0,
+            fuel_efficiency: 0.3,
         }
     }
 }
@@ -113,7 +115,7 @@ impl Plugin for PlayerPlugin {
             .add_systems(
                 Update,
                 (
-                    update_player_sprite,
+                    update_player_on_state_changes,
                     update_fov,
                     (
                         move_player.run_if(in_state(GameState::Playing)),
@@ -131,6 +133,10 @@ fn spawn_player(mut commands: Commands, game_assets: Res<GameAssets>) {
     commands
         .spawn((
             Player,
+            Damping {
+                linear_damping: 0.5,
+                angular_damping: 0.5,
+            },
             Sprite {
                 image: game_assets.texture.clone(),
                 texture_atlas: Some(TextureAtlas {
@@ -159,7 +165,6 @@ fn spawn_player(mut commands: Commands, game_assets: Res<GameAssets>) {
                 current: 100.0,
                 max: 100.0,
             },
-            Damage { factor: 0.05 },
             Fuel {
                 current: 100.0,
                 max: 100.0,
@@ -170,6 +175,7 @@ fn spawn_player(mut commands: Commands, game_assets: Res<GameAssets>) {
         .insert(LockedAxes::ROTATION_LOCKED);
 }
 pub fn move_player(
+    time: Res<Time>,
     keyboard_input: Res<ButtonInput<KeyCode>>,
     mut query_player: Query<
         (&mut Velocity, &mut DrillState, &PlayerAttributes, &mut Fuel),
@@ -192,22 +198,29 @@ pub fn move_player(
         if direction != Vec2::ZERO {
             if direction.x != 0.0 {
                 velocity.linvel.x = direction.x * attributes.ground_speed_factor;
-                fuel.current -= 1.0 / attributes.fuel_efficiency;
             }
             if direction.y != 0.0 {
                 velocity.linvel.y = direction.y * attributes.flying_speed_factor;
-                fuel.current -= 1.0 / attributes.fuel_efficiency;
                 *drill_state = Flying;
             }
+            fuel.current -= (1.0 / attributes.fuel_efficiency) * time.delta_secs();
         }
     }
 }
 
-fn update_player_sprite(
-    mut query: Query<(&DrillState, &mut Sprite), (With<Player>, Changed<DrillState>)>,
+fn update_player_on_state_changes(
+    mut query: Query<(&DrillState, &mut Damping, &mut Sprite), (With<Player>, Changed<DrillState>)>,
 ) {
-    if let Ok((state, mut sprite)) = query.get_single_mut() {
+    if let Ok((state, mut damping, mut sprite)) = query.get_single_mut() {
+        println!("changed state {:?}", state);
+        if *state == Idle {
+            damping.linear_damping = 4.0;
+        } else {
+            damping.linear_damping = 0.5;
+        }
+        println!("Damping: {:?}", damping);
         if let Some(texture_sprite) = &mut sprite.texture_atlas {
+            println!("Texture atlas: {:?}", texture_sprite);
             match state {
                 Idle => texture_sprite.index = 2,
                 Flying => texture_sprite.index = 3,
@@ -280,7 +293,16 @@ fn drill(
 
 fn collision_detection(
     mut collision_events: EventReader<CollisionEvent>,
-    mut player: Query<(&Velocity, &mut Health, &Damage, &mut DrillState, &Transform), With<Player>>,
+    mut player: Query<
+        (
+            &Velocity,
+            &mut Health,
+            &PlayerAttributes,
+            &mut DrillState,
+            &Transform,
+        ),
+        With<Player>,
+    >,
     tiles: Query<&Transform, With<Tile>>,
 ) {
     for event in collision_events.read() {
@@ -295,7 +317,7 @@ fn collision_detection(
                         continue;
                     };
 
-                let (velocity, mut health, damage, mut drill_state, player_pos) =
+                let (velocity, mut health, player_attributes, mut drill_state, player_pos) =
                     player.get_mut(player_entity).unwrap();
                 let tile_transform = tiles.get(tile_entity).unwrap();
 
@@ -307,7 +329,7 @@ fn collision_detection(
                     *drill_state = Idle;
                     let impact_speed = velocity.linvel.y.abs();
                     if impact_speed > 300.0 {
-                        let damage_amount = impact_speed * damage.factor;
+                        let damage_amount = impact_speed * player_attributes.damage_factor;
                         health.current -= damage_amount;
                         println!(
                             "Player collision detected, impact speed {:?}, damage {:?}, player integrity {:?}",
