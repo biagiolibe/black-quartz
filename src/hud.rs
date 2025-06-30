@@ -1,5 +1,5 @@
 use crate::player::Player;
-use crate::prelude::{world_to_grid_position, Health, Inventory};
+use crate::prelude::{world_to_grid_position, Fuel, Health, Inventory};
 use bevy::prelude::{
     App, AssetServer, BuildChildren, ChildBuild, Color, Commands, Component, Entity, FlexDirection,
     JustifyContent, Node, Plugin, PositionType, Query, Res, Startup, Text, TextColor, TextFont,
@@ -11,7 +11,6 @@ use bevy::ui::AlignItems::Start;
 use bevy::ui::Val::Px;
 use bevy::ui::{BackgroundColor, UiRect};
 use bevy::utils::default;
-use bevy_rapier2d::prelude::Velocity;
 
 pub struct HUDPlugin;
 
@@ -25,7 +24,7 @@ struct HudIntegrityText;
 struct HudDepthText;
 
 #[derive(Component)]
-struct HudVelocityText;
+struct HudFuelText;
 
 #[derive(Component)]
 struct HudInventoryText;
@@ -86,11 +85,11 @@ fn init_hud(mut commands: Commands, assets_server: Res<AssetServer>) {
             /// Velocity stat
             hud_children
                 .spawn((
-                    Text::new("Velocity: "),
+                    Text::new("Fuel: "),
                     font_style.clone(),
                     TextColor(Color::WHITE),
                     TextLayout::new_with_justify(Left),
-                    HudVelocityText,
+                    HudFuelText,
                 ))
                 .with_child((TextSpan::default(), font_style.clone()));
             /// Inventory stat
@@ -109,9 +108,9 @@ fn init_hud(mut commands: Commands, assets_server: Res<AssetServer>) {
 fn update_hud(
     hud_integrity_text: Query<Entity, With<HudIntegrityText>>,
     hud_depth_text: Query<Entity, With<HudDepthText>>,
-    hud_velocity_text: Query<Entity, With<HudVelocityText>>,
+    hud_fuel_text: Query<Entity, With<HudFuelText>>,
     hud_inventory_text: Query<Entity, With<HudInventoryText>>,
-    player: Query<(&Health, &Transform, &Velocity, &Inventory), With<Player>>,
+    player: Query<(&Health, &Transform, &Fuel, &Inventory), With<Player>>,
     mut text_writer: TextUiWriter,
 ) {
     /// Updating hud integrity stats
@@ -125,9 +124,9 @@ fn update_hud(
         let position = world_to_grid_position(player_stats.1.translation.truncate());
         *text_writer.text(depth_text_entity, 1) = format!("{}", position.1);
     }
-    if let Ok(velocity_text_entity) = hud_velocity_text.get_single() {
-        let velocity = player_stats.2;
-        *text_writer.text(velocity_text_entity, 1) = format!("{}", velocity.linvel.y);
+    if let Ok(fuel_text_entity) = hud_fuel_text.get_single() {
+        let fuel = player_stats.2;
+        *text_writer.text(fuel_text_entity, 1) = format!("{}", fuel.current.trunc());
     }
     if let Ok(inventory_text_entity) = hud_inventory_text.get_single() {
         let inventory = player_stats.3;

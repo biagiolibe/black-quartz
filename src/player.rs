@@ -1,26 +1,47 @@
 use crate::map::TileType::Empty;
-use crate::map::{TILE_SIZE, Tile, WorldGrid};
+use crate::map::{Tile, WorldGrid, TILE_SIZE};
 use crate::player::DrillState::{Drilling, Falling, Flying, Idle};
-use crate::prelude::{GameAssets, GameState, world_grid_position_to_idx, world_to_grid_position};
+use crate::prelude::{world_grid_position_to_idx, world_to_grid_position, GameAssets, GameState};
 use bevy::prelude::*;
 use bevy_rapier2d::prelude::{
-    ActiveEvents, Collider, CollisionEvent, ContactForceEvent, Damping, GravityScale, LockedAxes,
-    QueryFilter, ReadRapierContext, RigidBody, ShapeCastOptions, Velocity,
+    ActiveEvents, Collider, CollisionEvent, GravityScale, LockedAxes, QueryFilter,
+    ReadRapierContext, RigidBody, ShapeCastOptions, Velocity,
 };
 use std::collections::{HashSet, VecDeque};
-
-pub const PLAYER_DRILLING_STRENGTH: f32 = 1.0; //TODO: add as component of the player
-
-pub const PLAYER_ARMOR_RESISTANCE: f32 = 1.0; //TODO: add as component of the player and rename
-pub const PLAYER_GROUND_SPEED_FACTOR: f32 = 200.0; //TODO: add as component of the player
-pub const PLAYER_FLYING_SPEED_FACTOR: f32 = 200.0; //TODO: add as component of the player
 pub struct PlayerPlugin;
 
 #[derive(Component)]
 pub struct Player;
 
+#[derive(Component, PartialEq, Debug, Clone, Copy)]
+pub struct PlayerAttributes {
+    drill_power: f32,
+    armor_resistance: f32,
+    ground_speed_factor: f32,
+    flying_speed_factor: f32,
+    fuel_efficiency: f32,
+}
+
+impl PlayerAttributes {
+    pub fn default() -> Self {
+        PlayerAttributes {
+            drill_power: 1.0,
+            armor_resistance: 1.0,
+            ground_speed_factor: 200.0,
+            flying_speed_factor: 200.0,
+            fuel_efficiency: 1.0,
+        }
+    }
+}
+
 #[derive(Component)]
 pub struct Health {
+    pub current: f32,
+    pub max: f32,
+}
+
+#[derive(Component)]
+pub struct Fuel {
     pub current: f32,
     pub max: f32,
 }
@@ -110,12 +131,6 @@ fn spawn_player(mut commands: Commands, game_assets: Res<GameAssets>) {
     commands
         .spawn((
             Player,
-            Health {
-                current: 100.0,
-                max: 100.0,
-            },
-            Damage { factor: 0.05 },
-            Idle,
             Sprite {
                 image: game_assets.texture.clone(),
                 texture_atlas: Some(TextureAtlas {
@@ -140,14 +155,29 @@ fn spawn_player(mut commands: Commands, game_assets: Res<GameAssets>) {
                 items: Vec::new(),
                 capacity: 10,
             },
+            Health {
+                current: 100.0,
+                max: 100.0,
+            },
+            Damage { factor: 0.05 },
+            Fuel {
+                current: 100.0,
+                max: 100.0,
+            },
+            PlayerAttributes::default(),
+            Idle,
         ))
         .insert(LockedAxes::ROTATION_LOCKED);
 }
 pub fn move_player(
     keyboard_input: Res<ButtonInput<KeyCode>>,
-    mut query_player: Query<(&mut Velocity, &mut DrillState), With<Player>>,
+    mut query_player: Query<
+        (&mut Velocity, &mut DrillState, &PlayerAttributes, &mut Fuel),
+        With<Player>,
+    >,
 ) {
-    if let Ok((mut velocity, mut drill_state)) = query_player.get_single_mut() {
+    if let Ok((mut velocity, mut drill_state, attributes, mut fuel)) = query_player.get_single_mut()
+    {
         let direction = keyboard_input
             .get_pressed()
             .fold(Vec2::ZERO, |mut direction, key| {
@@ -161,10 +191,12 @@ pub fn move_player(
             });
         if direction != Vec2::ZERO {
             if direction.x != 0.0 {
-                velocity.linvel.x = direction.x * PLAYER_GROUND_SPEED_FACTOR
+                velocity.linvel.x = direction.x * attributes.ground_speed_factor;
+                fuel.current -= 1.0 / attributes.fuel_efficiency;
             }
             if direction.y != 0.0 {
-                velocity.linvel.y = direction.y * PLAYER_FLYING_SPEED_FACTOR;
+                velocity.linvel.y = direction.y * attributes.flying_speed_factor;
+                fuel.current -= 1.0 / attributes.fuel_efficiency;
                 *drill_state = Flying;
             }
         }
@@ -175,7 +207,6 @@ fn update_player_sprite(
     mut query: Query<(&DrillState, &mut Sprite), (With<Player>, Changed<DrillState>)>,
 ) {
     if let Ok((state, mut sprite)) = query.get_single_mut() {
-        println!("drill state: {:?}", state);
         if let Some(texture_sprite) = &mut sprite.texture_atlas {
             match state {
                 Idle => texture_sprite.index = 2,
@@ -191,11 +222,19 @@ fn drill(
     time: Res<Time>,
     mut commands: Commands,
     keyboard_input: Res<ButtonInput<KeyCode>>,
-    mut player: Query<(&Transform, &mut Inventory, &mut DrillState), With<Player>>,
+    mut player: Query<
+        (
+            &Transform,
+            &mut Inventory,
+            &mut DrillState,
+            &PlayerAttributes,
+        ),
+        With<Player>,
+    >,
     mut world_grid: ResMut<WorldGrid>,
     mut query_tile: Query<(&mut Tile, &Transform), With<Tile>>,
 ) {
-    if let Ok((transform, mut inventory, mut drill_state)) = player.get_single_mut() {
+    if let Ok((transform, mut inventory, mut drill_state, attributes)) = player.get_single_mut() {
         let position = transform.translation.truncate();
         let current_position = world_to_grid_position(position);
 
@@ -213,9 +252,8 @@ fn drill(
 
             if let Some(entity) = world_grid.grid.get(&target_index) {
                 if let Ok((mut tile, _)) = query_tile.get_mut(*entity) {
-                    tile.drilling.integrity -= PLAYER_DRILLING_STRENGTH
-                        * time.delta_secs()
-                        * (1.0 - tile.drilling.hardness);
+                    tile.drilling.integrity -=
+                        attributes.drill_power * time.delta_secs() * (1.0 - tile.drilling.hardness);
                     if tile.drilling.integrity <= 0.0 {
                         commands.entity(*entity).despawn();
                         world_grid.grid.remove(&target_index);
