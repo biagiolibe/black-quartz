@@ -212,13 +212,12 @@ fn update_player_on_state_changes(
     mut query: Query<(&DrillState, &mut Damping, &mut Sprite), (With<Player>, Changed<DrillState>)>,
 ) {
     if let Ok((state, mut damping, mut sprite)) = query.get_single_mut() {
-        println!("changed state {:?}", state);
+
         if *state == Idle {
             damping.linear_damping = 4.0;
         } else {
             damping.linear_damping = 0.5;
         }
-        println!("Damping: {:?}", damping);
         if let Some(texture_sprite) = &mut sprite.texture_atlas {
             println!("Texture atlas: {:?}", texture_sprite);
             match state {
