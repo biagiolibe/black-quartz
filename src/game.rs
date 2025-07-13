@@ -25,6 +25,7 @@ impl Plugin for GamePlugin {
                 MenuPlugin,
                 CameraPlugin,
                 MapPlugin,
+                WorldBasePlugin,
                 HUDPlugin,
                 PlayerPlugin
             ));

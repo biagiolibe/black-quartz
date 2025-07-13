@@ -5,6 +5,7 @@ mod map;
 mod menu;
 mod player;
 mod camera;
+mod world_base;
 
 mod prelude {
     pub use crate::camera::*;
@@ -14,6 +15,7 @@ mod prelude {
     pub use crate::map::*;
     pub use crate::menu::*;
     pub use crate::player::*;
+    pub use crate::world_base::*;
 }
 
 use crate::prelude::GamePlugin;
@@ -37,7 +39,7 @@ fn main() {
                 ..default()
             }),
             RapierPhysicsPlugin::<NoUserData>::pixels_per_meter(100.0),
-            //RapierDebugRenderPlugin::default(),
+            RapierDebugRenderPlugin::default(),
         ))
         .add_plugins(GamePlugin)
         .run();

@@ -128,7 +128,7 @@ impl Plugin for PlayerPlugin {
             );
     }
 }
-fn spawn_player(mut commands: Commands, game_assets: Res<GameAssets>) {
+pub fn spawn_player(mut commands: Commands, game_assets: Res<GameAssets>) {
     // Drilling Machine (Player)
     commands
         .spawn((
@@ -138,9 +138,9 @@ fn spawn_player(mut commands: Commands, game_assets: Res<GameAssets>) {
                 angular_damping: 0.5,
             },
             Sprite {
-                image: game_assets.texture.clone(),
+                image: game_assets.player.texture.clone(),
                 texture_atlas: Some(TextureAtlas {
-                    layout: game_assets.texture_layout.clone(),
+                    layout: game_assets.player.texture_layout.clone(),
                     index: 2,
                 }),
                 custom_size: Some(Vec2::new(TILE_SIZE, TILE_SIZE)),
@@ -178,11 +178,18 @@ pub fn move_player(
     time: Res<Time>,
     keyboard_input: Res<ButtonInput<KeyCode>>,
     mut query_player: Query<
-        (&mut Velocity, &mut DrillState, &PlayerAttributes, &mut Fuel),
+        (
+            &mut Velocity,
+            &mut DrillState,
+            &PlayerAttributes,
+            &mut Fuel,
+            &Transform,
+        ),
         With<Player>,
     >,
 ) {
-    if let Ok((mut velocity, mut drill_state, attributes, mut fuel)) = query_player.get_single_mut()
+    if let Ok((mut velocity, mut drill_state, attributes, mut fuel, position)) =
+        query_player.get_single_mut()
     {
         let direction = keyboard_input
             .get_pressed()
@@ -212,14 +219,12 @@ fn update_player_on_state_changes(
     mut query: Query<(&DrillState, &mut Damping, &mut Sprite), (With<Player>, Changed<DrillState>)>,
 ) {
     if let Ok((state, mut damping, mut sprite)) = query.get_single_mut() {
-
         if *state == Idle {
-            damping.linear_damping = 4.0;
+            damping.linear_damping = 10.0;
         } else {
             damping.linear_damping = 0.5;
         }
         if let Some(texture_sprite) = &mut sprite.texture_atlas {
-            println!("Texture atlas: {:?}", texture_sprite);
             match state {
                 Idle => texture_sprite.index = 2,
                 Flying => texture_sprite.index = 3,

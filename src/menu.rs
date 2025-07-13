@@ -17,6 +17,7 @@ pub fn setup_menu(
     mut commands: Commands,
 ) {
     info!("menu");
+    /*
     commands.spawn((Camera2d, Msaa::Off));
     commands
         .spawn((
@@ -30,6 +31,8 @@ pub fn setup_menu(
             },
             Menu,
         ));
+
+     */
 }
 
 fn cleanup_menu(mut commands: Commands, menu: Query<Entity, With<Menu>>) {

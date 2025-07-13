@@ -93,7 +93,7 @@ impl Plugin for MapPlugin {
     }
 }
 
-fn initialize_world_grid(mut commands: Commands) {
+pub fn initialize_world_grid(mut commands: Commands) {
     println!("Generating map using Cellular Automata algorithm");
     // Initialize an empty map
     let mut tiles = vec![vec![Empty; GRID_WIDTH as usize]; GRID_HEIGHT as usize];
@@ -257,9 +257,9 @@ fn render_map(
                 _ => {
                     commands.spawn((
                         Sprite {
-                            image: game_assets.terrain_texture.clone(),
+                            image: game_assets.terrain.texture.clone(),
                             texture_atlas: Some(TextureAtlas {
-                                layout: game_assets.terrain_texture_layout.clone(),
+                                layout: game_assets.terrain.texture_layout.clone(),
                                 index: texture_layout_index,
                             }),
                             custom_size: Some(Vec2::splat(TILE_SIZE)),
