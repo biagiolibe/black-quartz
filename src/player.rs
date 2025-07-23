@@ -111,15 +111,14 @@ impl Inventory {
 /// Player logic is only active during the State `GameState::Playing`
 impl Plugin for PlayerPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(OnEnter(GameState::Playing), spawn_player)
+        app.add_systems(Startup, spawn_player)
             .add_systems(
                 Update,
                 (
                     update_player_on_state_changes,
                     update_fov,
                     (
-                        move_player.run_if(in_state(GameState::Playing)),
-                        drill,
+                        (move_player, drill).run_if(in_state(GameState::Playing)),
                         falling_detection,
                         collision_detection,
                     )

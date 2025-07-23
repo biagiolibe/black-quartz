@@ -1,7 +1,7 @@
 use crate::game::GameState;
 use crate::map::TILE_SIZE;
 use crate::player::Player;
-use crate::prelude::{GameAssets, Inventory, Menu};
+use crate::prelude::{GameAssets, Inventory, Menu, MenuState};
 use bevy::prelude::*;
 use bevy_rapier2d::pipeline::CollisionEvent;
 use bevy_rapier2d::prelude::{ActiveEvents, Collider, Sensor};
@@ -49,7 +49,8 @@ fn base_access(
     mut collision_events: EventReader<CollisionEvent>,
     player: Query<&Inventory, With<Player>>,
     world_base: Query<&Transform, With<WorldBase>>,
-    mut next_state: ResMut<NextState<GameState>>,
+    mut next_game_state: ResMut<NextState<GameState>>,
+    mut next_menu_state: ResMut<NextState<MenuState>>,
 ) {
     for event in collision_events.read() {
         match event {
@@ -64,7 +65,8 @@ fn base_access(
                     };
                 println!("Player has access to base");
                 let inventory = player.get(player_entity).unwrap();
-                next_state.set(GameState::Menu)
+                next_game_state.set(GameState::Menu);
+                next_menu_state.set(MenuState::WorldBase)
             }
             _ => {}
         }

@@ -20,6 +20,7 @@ pub struct GamePlugin;
 impl Plugin for GamePlugin {
     fn build(&self, app: &mut App) {
         app.init_state::<GameState>()
+            .init_state::<MenuState>()
             .add_plugins((
                 LoadingPlugin,
                 MenuPlugin,
@@ -27,13 +28,13 @@ impl Plugin for GamePlugin {
                 MapPlugin,
                 WorldBasePlugin,
                 HUDPlugin,
-                PlayerPlugin
+                PlayerPlugin,
             ));
-/*
-        #[cfg(debug_assertions)]
-        {
-            app.add_plugins((FrameTimeDiagnosticsPlugin, LogDiagnosticsPlugin::default()));
-        }
- */
+        /*
+               #[cfg(debug_assertions)]
+               {
+                   app.add_plugins((FrameTimeDiagnosticsPlugin, LogDiagnosticsPlugin::default()));
+               }
+        */
     }
 }
