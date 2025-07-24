@@ -11,6 +11,15 @@ use std::collections::{HashSet, VecDeque};
 pub struct PlayerPlugin;
 
 #[derive(Component)]
+#[require(
+    Inventory,
+    Health,
+    Fuel,
+    FieldOfView,
+    DrillState,
+    PlayerAttributes,
+    Currency
+)]
 pub struct Player;
 
 #[derive(Component, PartialEq, Debug, Clone, Copy)]
@@ -23,9 +32,9 @@ pub struct PlayerAttributes {
     fuel_efficiency: f32,
 }
 
-impl PlayerAttributes {
-    pub fn default() -> Self {
-        PlayerAttributes {
+impl Default for PlayerAttributes {
+    fn default() -> Self {
+        Self {
             drill_power: 1.0,
             damage_factor: 0.05, //TODO deprecate in flavor of armor_resistance
             armor_resistance: 1.0,
@@ -41,6 +50,14 @@ pub struct Health {
     pub current: f32,
     pub max: f32,
 }
+impl Default for Health {
+    fn default() -> Self {
+        Self {
+            current: 100.0,
+            max: 100.0,
+        }
+    }
+}
 
 #[derive(Component)]
 pub struct Fuel {
@@ -48,13 +65,17 @@ pub struct Fuel {
     pub max: f32,
 }
 
-#[derive(Component)]
-pub struct Damage {
-    pub factor: f32,
+impl Default for Fuel {
+    fn default() -> Self {
+        Self {
+            current: 100.0,
+            max: 100.0,
+        }
+    }
 }
-
-#[derive(Component, PartialEq, Eq, Debug, Clone, Copy)]
+#[derive(Component, PartialEq, Eq, Debug, Clone, Copy, Default)]
 pub enum DrillState {
+    #[default]
     Idle,
     Flying,
     Drilling,
@@ -67,18 +88,36 @@ pub struct FieldOfView {
     radius: i32,
     pub dirty: bool,
 }
+impl Default for FieldOfView {
+    fn default() -> Self {
+        Self {
+            visible_tiles: HashSet::new(),
+            radius: 10,
+            dirty: false,
+        }
+    }
+}
 
 #[derive(Component)]
 pub struct Item {
     pub id: String,
     pub name: String,
     pub quantity: usize,
+    pub value: u32,
 }
 
 #[derive(Component)]
 pub struct Inventory {
     pub items: Vec<Item>,
     capacity: usize,
+}
+impl Default for Inventory {
+    fn default() -> Self {
+        Self {
+            items: Vec::new(),
+            capacity: 10,
+        }
+    }
 }
 
 impl Inventory {
@@ -107,24 +146,33 @@ impl Inventory {
     }
 }
 
+#[derive(Component)]
+pub struct Currency {
+    pub amount: u32,
+}
+impl Default for Currency {
+    fn default() -> Self {
+        Self { amount: 100 }
+    }
+}
+
 /// This plugin handles player-related stuff like movement
 /// Player logic is only active during the State `GameState::Playing`
 impl Plugin for PlayerPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(Startup, spawn_player)
-            .add_systems(
-                Update,
+        app.add_systems(Startup, spawn_player).add_systems(
+            Update,
+            (
+                update_player_on_state_changes,
+                update_fov,
                 (
-                    update_player_on_state_changes,
-                    update_fov,
-                    (
-                        (move_player, drill).run_if(in_state(GameState::Playing)),
-                        falling_detection,
-                        collision_detection,
-                    )
-                        .chain(),
-                ),
-            );
+                    (move_player, drill).run_if(in_state(GameState::Playing)),
+                    falling_detection,
+                    collision_detection,
+                )
+                    .chain(),
+            ),
+        );
     }
 }
 pub fn spawn_player(mut commands: Commands, game_assets: Res<GameAssets>) {
@@ -151,25 +199,6 @@ pub fn spawn_player(mut commands: Commands, game_assets: Res<GameAssets>) {
             ActiveEvents::COLLISION_EVENTS,
             GravityScale(1.0),
             Velocity::zero(),
-            FieldOfView {
-                visible_tiles: HashSet::new(),
-                radius: 10,
-                dirty: false,
-            },
-            Inventory {
-                items: Vec::new(),
-                capacity: 10,
-            },
-            Health {
-                current: 100.0,
-                max: 100.0,
-            },
-            Fuel {
-                current: 100.0,
-                max: 100.0,
-            },
-            PlayerAttributes::default(),
-            Idle,
         ))
         .insert(LockedAxes::ROTATION_LOCKED);
 }

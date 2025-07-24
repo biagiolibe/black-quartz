@@ -34,21 +34,25 @@ impl TileType {
                 id: "iron".to_string(),
                 name: "Iron".to_string(),
                 quantity: 1,
+                value: 10,
             }),
             Copper => Some(Item{
                 id: "copper".to_string(),
                 name: "Copper".to_string(),
                 quantity: 1,
+                value: 5,
             }),
             Gold => Some(Item{
                 id: "gold".to_string(),
                 name: "Gold".to_string(),
                 quantity: 1,
+                value: 25,
             }),
             Crystal => Some(Item{
                 id: "crystal".to_string(),
                 name: "Crystal".to_string(),
                 quantity: 1,
+                value: 50,
             }),
         }
     }
