@@ -63,10 +63,10 @@ fn base_access(
                     } else {
                         continue;
                     };
-                println!("Player has access to base");
-                let inventory = player.get(player_entity).unwrap();
+                println!("Player has accessed the base");
                 next_game_state.set(GameState::Menu);
-                next_menu_state.set(MenuState::WorldBase)
+                next_menu_state.set(MenuState::WorldBase);
+                println!("Menu state: {:?}", next_menu_state);
             }
             _ => {}
         }

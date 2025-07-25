@@ -1,5 +1,5 @@
 use crate::prelude::GameState::Playing;
-use crate::prelude::MenuButton::{Resume, Recharge, Selling};
+use crate::prelude::MenuButton::{Recharge, Resume, Selling};
 use crate::prelude::*;
 use bevy::prelude::*;
 use bevy::ui::Interaction::Pressed;
@@ -46,11 +46,7 @@ pub fn handle_start_menu(mut commands: Commands, next_state: ResMut<NextState<Me
     //TODO implementation
 }
 
-pub fn handle_base_menu(
-    mut commands: Commands,
-    next_state: ResMut<NextState<MenuState>>,
-    assets_server: Res<AssetServer>,
-) {
+pub fn handle_base_menu(mut commands: Commands, assets_server: Res<AssetServer>) {
     info!("base menu");
     let font = assets_server.load("fonts/FiraSans-Regular.ttf");
 
@@ -59,7 +55,6 @@ pub fn handle_base_menu(
         font_size: 20.0,
         ..Default::default()
     };
-    //commands.spawn((Camera2d, Msaa::Off));
     commands
         .spawn((
             Node {
@@ -120,13 +115,17 @@ pub fn handle_base_menu(
 fn handle_button_interaction(
     interaction: Query<(&Interaction, &MenuButton), (Changed<Interaction>, With<Button>)>,
     mut next_state: ResMut<NextState<GameState>>,
+    mut next_menu_state: ResMut<NextState<MenuState>>,
 ) {
     for (interaction, button) in interaction.iter() {
         if *interaction == Pressed {
             match button {
                 Selling => sell_all_inventory(),
                 Recharge => recharge_fuel(),
-                Resume => next_state.set(Playing),
+                Resume => {
+                    next_menu_state.set(MenuState::None);
+                    next_state.set(Playing);
+                }
                 _ => {}
             }
         }
@@ -158,7 +157,6 @@ pub fn handle_gameover_menu(mut commands: Commands, next_state: ResMut<NextState
 
 fn cleanup_menu(mut commands: Commands, menu: Query<Entity, With<Menu>>) {
     for entity in menu.iter() {
-        println!("entity: {:?}", entity);
         commands.entity(entity).despawn_recursive();
     }
 }
