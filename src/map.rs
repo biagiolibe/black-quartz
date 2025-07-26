@@ -30,25 +30,25 @@ impl TileType {
     pub fn to_item(&self) -> Option<Item> {
         match self {
             Solid | Sand | Empty => None,
-            Iron => Some(Item{
+            Iron => Some(Item {
                 id: "iron".to_string(),
                 name: "Iron".to_string(),
                 quantity: 1,
                 value: 10,
             }),
-            Copper => Some(Item{
+            Copper => Some(Item {
                 id: "copper".to_string(),
                 name: "Copper".to_string(),
                 quantity: 1,
                 value: 5,
             }),
-            Gold => Some(Item{
+            Gold => Some(Item {
                 id: "gold".to_string(),
                 name: "Gold".to_string(),
                 quantity: 1,
                 value: 25,
             }),
-            Crystal => Some(Item{
+            Crystal => Some(Item {
                 id: "crystal".to_string(),
                 name: "Crystal".to_string(),
                 quantity: 1,
@@ -79,8 +79,6 @@ pub struct WorldGrid {
 }
 #[derive(Component, Clone, Copy, PartialEq)]
 pub struct FovOverlay;
-
-pub struct Map;
 
 /// This plugin handles map related stuff
 impl Plugin for MapPlugin {
@@ -127,7 +125,6 @@ pub fn initialize_world_grid(mut commands: Commands) {
     }
      */
 
-
     commands.insert_resource(WorldGrid {
         grid: HashMap::new(),
         revealed_tiles: HashSet::new(),
@@ -161,37 +158,37 @@ fn distribute_materials(tiles: &mut Vec<Vec<TileType>>) -> Vec<Vec<TileType>> {
             // La profondità influenza la rarità
             let depth = y as f32;
             // Rarità controllata da profondità e noise
-            let mut material = Solid;
-            if depth > (GRID_HEIGHT - ((GRID_HEIGHT * 20) / 100)) as f32 {
+
+            let material = if depth > (GRID_HEIGHT - ((GRID_HEIGHT * 20) / 100)) as f32 {
                 // first 20% (as reversed for generation indexes)
                 if noise_val < 0.7 {
-                    material = Solid;
+                    Solid
                 } else if noise_val < 0.8 {
-                    material = Sand;
+                    Sand
                 } else if noise_val < 0.9 {
-                    material = Copper;
+                    Copper
                 } else {
-                    material = Iron;
+                    Iron
                 }
             } else if depth > (GRID_HEIGHT - ((GRID_HEIGHT * 80) / 100)) as f32 {
                 if noise_val < 0.7 {
-                    material = Solid;
+                    Solid
                 } else if noise_val < 0.9 {
-                    material = Iron;
+                    Iron
                 } else {
-                    material = Gold;
+                    Gold
                 }
             } else {
                 if noise_val < 0.7 {
-                    material = Solid
+                    Solid
                 } else if noise_val < 0.8 {
-                    material = Iron
+                    Iron
                 } else if noise_val < 0.9 {
-                    material = Gold
+                    Gold
                 } else {
-                    material = Crystal
+                    Crystal
                 }
-            }
+            };
             materialized_tiles[y][x] = material;
         }
     }
@@ -258,28 +255,26 @@ fn render_map(
                     Transform::from_xyz(x as f32 * TILE_SIZE, y as f32 * TILE_SIZE, 0.0),
                     tile,
                 )),
-                _ => {
-                    commands.spawn((
-                        Sprite {
-                            image: game_assets.terrain.texture.clone(),
-                            texture_atlas: Some(TextureAtlas {
-                                layout: game_assets.terrain.texture_layout.clone(),
-                                index: texture_layout_index,
-                            }),
-                            custom_size: Some(Vec2::splat(TILE_SIZE)),
-                            color: match y {
-                                depth if depth < -1 => Color::srgba(0.0, 0.0, 0.0, 1.0),
-                                _ => Color::WHITE,
-                            },
-                            ..default()
+                _ => commands.spawn((
+                    Sprite {
+                        image: game_assets.terrain.texture.clone(),
+                        texture_atlas: Some(TextureAtlas {
+                            layout: game_assets.terrain.texture_layout.clone(),
+                            index: texture_layout_index,
+                        }),
+                        custom_size: Some(Vec2::splat(TILE_SIZE)),
+                        color: match y {
+                            depth if depth < -1 => Color::srgba(0.0, 0.0, 0.0, 1.0),
+                            _ => Color::WHITE,
                         },
-                        Transform::from_xyz(x as f32 * TILE_SIZE, y as f32 * TILE_SIZE, 0.0),
-                        RigidBody::Fixed,
-                        Collider::cuboid(TILE_SIZE / 2f32, TILE_SIZE / 2f32),
-                        ActiveEvents::COLLISION_EVENTS,
-                        tile,
-                    ))
-                }
+                        ..default()
+                    },
+                    Transform::from_xyz(x as f32 * TILE_SIZE, y as f32 * TILE_SIZE, 0.0),
+                    RigidBody::Fixed,
+                    Collider::cuboid(TILE_SIZE / 2f32, TILE_SIZE / 2f32),
+                    ActiveEvents::COLLISION_EVENTS,
+                    tile,
+                )),
             }
             .id();
             world_grid.grid.insert((x as i32, y as i32), entity);

@@ -98,7 +98,7 @@ impl Default for FieldOfView {
     }
 }
 
-#[derive(Component)]
+#[derive(Component, Debug)]
 pub struct Item {
     pub id: String,
     pub name: String,
@@ -147,6 +147,7 @@ impl Inventory {
 }
 
 #[derive(Component)]
+#[derive(Debug)]
 pub struct Currency {
     pub amount: u32,
 }
@@ -211,12 +212,11 @@ pub fn move_player(
             &mut DrillState,
             &PlayerAttributes,
             &mut Fuel,
-            &Transform,
         ),
         With<Player>,
     >,
 ) {
-    if let Ok((mut velocity, mut drill_state, attributes, mut fuel, position)) =
+    if let Ok((mut velocity, mut drill_state, attributes, mut fuel)) =
         query_player.get_single_mut()
     {
         let direction = keyboard_input

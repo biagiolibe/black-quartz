@@ -1,5 +1,5 @@
 use crate::prelude::GameState::Playing;
-use crate::prelude::MenuButton::{Recharge, Resume, Selling};
+use crate::prelude::MenuButton::{Refill, Resume, Sell};
 use crate::prelude::*;
 use bevy::prelude::*;
 use bevy::ui::Interaction::Pressed;
@@ -18,8 +18,8 @@ pub enum MenuState {
 }
 #[derive(Component, Debug)]
 pub enum MenuButton {
-    Selling,
-    Recharge,
+    Sell,
+    Refill,
     Resume,
 }
 
@@ -87,16 +87,16 @@ pub fn handle_base_menu(mut commands: Commands, assets_server: Res<AssetServer>)
                         TextColor(Color::WHITE),
                     ));
 
-                    popup.spawn((Button, Selling)).with_children(|button| {
+                    popup.spawn((Button, Sell)).with_children(|button| {
                         button.spawn((
-                            Text::new("Sell"),
+                            Text::new("Sell inventory"),
                             font_style.clone(),
                             TextColor(Color::WHITE),
                         ));
                     });
-                    popup.spawn((Button, Recharge)).with_children(|button| {
+                    popup.spawn((Button, Refill)).with_children(|button| {
                         button.spawn((
-                            Text::new("Recharge"),
+                            Text::new("Refill tank"),
                             font_style.clone(),
                             TextColor(Color::WHITE),
                         ));
@@ -114,30 +114,42 @@ pub fn handle_base_menu(mut commands: Commands, assets_server: Res<AssetServer>)
 
 fn handle_button_interaction(
     interaction: Query<(&Interaction, &MenuButton), (Changed<Interaction>, With<Button>)>,
+    mut player: Query<(&mut Inventory, &mut Fuel, &mut Currency), With<Player>>,
     mut next_state: ResMut<NextState<GameState>>,
     mut next_menu_state: ResMut<NextState<MenuState>>,
 ) {
     for (interaction, button) in interaction.iter() {
         if *interaction == Pressed {
             match button {
-                Selling => sell_all_inventory(),
-                Recharge => recharge_fuel(),
+                Sell => {
+                    if let Ok((mut inventory, _, mut currency)) = player.get_single_mut() {
+                        sell_all_inventory(&mut inventory, &mut currency);
+                    }
+                }
+                Refill => {
+                    if let Ok((_, mut fuel, mut currency)) = player.get_single_mut() {
+                        refill_tank(&mut fuel, &mut currency);
+                    }
+                }
                 Resume => {
                     next_menu_state.set(MenuState::None);
                     next_state.set(Playing);
                 }
-                _ => {}
             }
         }
     }
 }
 
-fn recharge_fuel() {
+fn refill_tank(fuel: &mut Fuel, currency: &mut Currency) {
     println!("Recharge fuel");
 }
 
-fn sell_all_inventory() {
-    println!("Sell all inventory");
+fn sell_all_inventory(inventory: &mut Inventory, currency: &mut Currency) {
+    println!(
+        "Selling inventory {:?}, having {:?} money",
+        inventory.items, currency
+    );
+    
 }
 
 pub fn handle_inventory_menu(mut commands: Commands, next_state: ResMut<NextState<MenuState>>) {

@@ -62,7 +62,7 @@ fn init_hud(mut commands: Commands, assets_server: Res<AssetServer>) {
             },
         ))
         .with_children(|hud_children| {
-            /// Integrity stat
+            // Integrity stat
             hud_children
                 .spawn((
                     Text::new("Integrity: "),
@@ -72,7 +72,7 @@ fn init_hud(mut commands: Commands, assets_server: Res<AssetServer>) {
                     HudIntegrityText,
                 ))
                 .with_child((TextSpan::default(), font_style.clone()));
-            /// Depth stat
+            // Depth stat
             hud_children
                 .spawn((
                     Text::new("Depth: "),
@@ -82,7 +82,7 @@ fn init_hud(mut commands: Commands, assets_server: Res<AssetServer>) {
                     HudDepthText,
                 ))
                 .with_child((TextSpan::default(), font_style.clone()));
-            /// Velocity stat
+            // Velocity stat
             hud_children
                 .spawn((
                     Text::new("Fuel: "),
@@ -92,7 +92,7 @@ fn init_hud(mut commands: Commands, assets_server: Res<AssetServer>) {
                     HudFuelText,
                 ))
                 .with_child((TextSpan::default(), font_style.clone()));
-            /// Inventory stat
+            // Inventory stat
             hud_children
                 .spawn((
                     Text::new("Inventory: "),
@@ -113,7 +113,7 @@ fn update_hud(
     player: Query<(&Health, &Transform, &Fuel, &Inventory), With<Player>>,
     mut text_writer: TextUiWriter,
 ) {
-    /// Updating hud integrity stats
+    // Updating hud integrity stats
     let player_stats = player.single();
     if let Ok(integrity_text_entity) = hud_integrity_text.get_single() {
         let health = player_stats.0;

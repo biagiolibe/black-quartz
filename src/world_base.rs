@@ -1,7 +1,7 @@
 use crate::game::GameState;
 use crate::map::TILE_SIZE;
 use crate::player::Player;
-use crate::prelude::{GameAssets, Inventory, Menu, MenuState};
+use crate::prelude::{GameAssets, Inventory, MenuState};
 use bevy::prelude::*;
 use bevy_rapier2d::pipeline::CollisionEvent;
 use bevy_rapier2d::prelude::{ActiveEvents, Collider, Sensor};
@@ -55,18 +55,14 @@ fn base_access(
     for event in collision_events.read() {
         match event {
             CollisionEvent::Started(collider1, collider2, _) => {
-                let player_entity =
-                    if player.get(*collider1).is_ok() && world_base.get(*collider2).is_ok() {
-                        (*collider1)
-                    } else if player.get(*collider2).is_ok() && world_base.get(*collider1).is_ok() {
-                        (*collider2)
-                    } else {
-                        continue;
-                    };
-                println!("Player has accessed the base");
-                next_game_state.set(GameState::Menu);
-                next_menu_state.set(MenuState::WorldBase);
-                println!("Menu state: {:?}", next_menu_state);
+                if (player.get(*collider1).is_ok()
+                    && world_base.get(*collider2).is_ok())
+                    || (player.get(*collider2).is_ok() && world_base.get(*collider1).is_ok())
+                {
+                    println!("Player has accessed the base");
+                    next_game_state.set(GameState::Menu);
+                    next_menu_state.set(MenuState::WorldBase);
+                };
             }
             _ => {}
         }
