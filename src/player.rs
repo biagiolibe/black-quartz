@@ -137,6 +137,14 @@ impl Inventory {
         self.items.iter().map(|i| i.quantity).sum()
     }
 
+    pub fn is_empty(&self) -> bool {
+        self.items.is_empty()
+    }
+
+    pub fn clear(&mut self) {
+        self.items.clear();
+    }
+
     pub fn print_items(&self) -> String {
         self.items
             .iter()
@@ -154,6 +162,12 @@ pub struct Currency {
 impl Default for Currency {
     fn default() -> Self {
         Self { amount: 100 }
+    }
+}
+
+impl Currency {
+    pub fn add_amount(&mut self, amount: u32) {
+        self.amount += amount;
     }
 }
 

@@ -116,6 +116,7 @@ fn handle_button_interaction(
     interaction: Query<(&Interaction, &MenuButton), (Changed<Interaction>, With<Button>)>,
     mut player: Query<(&mut Inventory, &mut Fuel, &mut Currency), With<Player>>,
     mut next_state: ResMut<NextState<GameState>>,
+    economy: Res<EconomyConfig>,
     mut next_menu_state: ResMut<NextState<MenuState>>,
 ) {
     for (interaction, button) in interaction.iter() {
@@ -128,7 +129,7 @@ fn handle_button_interaction(
                 }
                 Refill => {
                     if let Ok((_, mut fuel, mut currency)) = player.get_single_mut() {
-                        refill_tank(&mut fuel, &mut currency);
+                        refill_tank(&mut fuel, &mut currency, &economy);
                     }
                 }
                 Resume => {
@@ -140,8 +141,22 @@ fn handle_button_interaction(
     }
 }
 
-fn refill_tank(fuel: &mut Fuel, currency: &mut Currency) {
-    println!("Recharge fuel");
+fn refill_tank(fuel: &mut Fuel, currency: &mut Currency, economy_config: &Res<EconomyConfig>) {
+    println!("Refill tank");
+    let fuel_needed = fuel.max - fuel.current;
+    let refill_cost = if fuel_needed <= 10.0 {
+        economy_config.fuel_refill_amount
+    } else {
+        fuel_needed * economy_config.fuel_price_per_unit as f32
+    };
+    if currency.amount >= refill_cost as u32 {
+        println!("Refill max");
+        fuel.current = fuel.max;
+    } else {
+        let refilled = (currency.amount / economy_config.fuel_price_per_unit) as f32;
+        println!("refill {}", refilled);
+        fuel.current += refilled;
+    };
 }
 
 fn sell_all_inventory(inventory: &mut Inventory, currency: &mut Currency) {
@@ -149,7 +164,19 @@ fn sell_all_inventory(inventory: &mut Inventory, currency: &mut Currency) {
         "Selling inventory {:?}, having {:?} money",
         inventory.items, currency
     );
-    
+    if inventory.is_empty() {
+        println!("No items to be sold");
+        return;
+    }
+    let total_to_sell: u32 = inventory
+        .items
+        .iter()
+        .map(|i| i.value * i.quantity as u32)
+        .sum();
+
+    println!("Total earned: {}", total_to_sell);
+    currency.add_amount(total_to_sell);
+    inventory.clear();
 }
 
 pub fn handle_inventory_menu(mut commands: Commands, next_state: ResMut<NextState<MenuState>>) {

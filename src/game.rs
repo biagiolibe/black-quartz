@@ -15,6 +15,21 @@ pub enum GameState {
     Menu,
 }
 
+#[derive(Resource)]
+pub struct EconomyConfig {
+    pub fuel_price_per_unit: u32,
+    pub fuel_refill_amount: f32,
+}
+
+impl Default for EconomyConfig {
+    fn default() -> Self {
+        EconomyConfig {
+            fuel_price_per_unit: 2,
+            fuel_refill_amount: 100.0,
+        }
+    }
+}
+
 pub struct GamePlugin;
 
 impl Plugin for GamePlugin {
