@@ -34,7 +34,8 @@ pub struct GamePlugin;
 
 impl Plugin for GamePlugin {
     fn build(&self, app: &mut App) {
-        app.init_state::<GameState>()
+        app.insert_resource(EconomyConfig::default())
+            .init_state::<GameState>()
             .init_state::<MenuState>()
             .add_plugins((
                 LoadingPlugin,
