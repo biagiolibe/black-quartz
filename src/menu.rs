@@ -41,7 +41,7 @@ impl Plugin for MenuPlugin {
 #[derive(Component)]
 pub struct Menu;
 
-pub fn handle_start_menu(mut commands: Commands, next_state: ResMut<NextState<MenuState>>) {
+pub fn handle_start_menu() {
     info!("start menu");
     //TODO implementation
 }
@@ -149,21 +149,18 @@ fn refill_tank(fuel: &mut Fuel, currency: &mut Currency, economy_config: &Res<Ec
     } else {
         fuel_needed * economy_config.fuel_price_per_unit as f32
     };
-    if currency.amount >= refill_cost as u32 {
-        println!("Refill max");
-        fuel.current = fuel.max;
+    let (amount_spent, refilled)= if currency.amount >= refill_cost as u32 {
+        (refill_cost as u32, fuel_needed)
     } else {
         let refilled = (currency.amount / economy_config.fuel_price_per_unit) as f32;
-        println!("refill {}", refilled);
-        fuel.current += refilled;
+        (currency.amount, refilled)
     };
+    println!("Refilled {} spending: {}",refilled, amount_spent);
+    currency.amount-= amount_spent;
+    fuel.current += refilled;
 }
 
 fn sell_all_inventory(inventory: &mut Inventory, currency: &mut Currency) {
-    println!(
-        "Selling inventory {:?}, having {:?} money",
-        inventory.items, currency
-    );
     if inventory.is_empty() {
         println!("No items to be sold");
         return;
@@ -179,19 +176,58 @@ fn sell_all_inventory(inventory: &mut Inventory, currency: &mut Currency) {
     inventory.clear();
 }
 
-pub fn handle_inventory_menu(mut commands: Commands, next_state: ResMut<NextState<MenuState>>) {
+pub fn handle_inventory_menu() {
     info!("Inventory menu");
     //TODO implementation
 }
 
-pub fn handle_settings_menu(mut commands: Commands, next_state: ResMut<NextState<MenuState>>) {
+pub fn handle_settings_menu() {
     info!("Settings menu");
     //TODO implementation
 }
 
-pub fn handle_gameover_menu(mut commands: Commands, next_state: ResMut<NextState<MenuState>>) {
+pub fn handle_gameover_menu(mut commands: Commands, assets_server: Res<AssetServer>) {
     info!("Game over menu");
-    //TODO implementation
+    let font = assets_server.load("fonts/FiraSans-Regular.ttf");
+
+    let font_style = TextFont {
+        font: font.clone(),
+        font_size: 20.0,
+        ..Default::default()
+    };
+    commands
+        .spawn((
+            Node {
+                width: Val::Percent(100.0),
+                height: Val::Percent(100.0),
+                align_items: AlignItems::Center,
+                justify_content: JustifyContent::Center,
+                ..default()
+            },
+            Menu,
+        ))
+        .with_children(|parent| {
+            parent
+                .spawn((
+                    Node {
+                        width: Val::Percent(50.0),
+                        height: Val::Percent(50.0),
+                        flex_direction: FlexDirection::Column,
+                        align_items: AlignItems::Center,
+                        justify_content: JustifyContent::SpaceEvenly,
+                        padding: UiRect::all(Val::Px(20.)),
+                        ..default()
+                    },
+                    BackgroundColor(Color::BLACK),
+                ))
+                .with_children(|popup| {
+                    popup.spawn((
+                        Text::new("Game Over"),
+                        font_style.clone(),
+                        TextColor(Color::WHITE),
+                    ));
+                });
+        });
 }
 
 fn cleanup_menu(mut commands: Commands, menu: Query<Entity, With<Menu>>) {

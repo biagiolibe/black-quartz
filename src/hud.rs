@@ -1,11 +1,11 @@
 use crate::player::Player;
-use crate::prelude::{world_to_grid_position, Fuel, Health, Inventory};
+use crate::prelude::{Currency, Fuel, Health, Inventory, world_to_grid_position};
 use bevy::prelude::{
     App, AssetServer, BuildChildren, ChildBuild, Color, Commands, Component, Entity, FlexDirection,
     JustifyContent, Node, Plugin, PositionType, Query, Res, Startup, Text, TextColor, TextFont,
     TextLayout, TextUiWriter, Transform, Update, Val, With,
 };
-use bevy::text::JustifyText::Left;
+use bevy::text::JustifyText::{Left, Right};
 use bevy::text::TextSpan;
 use bevy::ui::AlignItems::Start;
 use bevy::ui::Val::Px;
@@ -28,6 +28,8 @@ struct HudFuelText;
 
 #[derive(Component)]
 struct HudInventoryText;
+#[derive(Component)]
+struct HudCurrencyText;
 
 impl Plugin for HUDPlugin {
     fn build(&self, app: &mut App) {
@@ -62,6 +64,16 @@ fn init_hud(mut commands: Commands, assets_server: Res<AssetServer>) {
             },
         ))
         .with_children(|hud_children| {
+            // Currency
+            hud_children
+                .spawn((
+                    Text::new("Money: "),
+                    font_style.clone(),
+                    TextColor(Color::srgb(255.0, 215.0, 0.0)),
+                    TextLayout::new_with_justify(Right),
+                    HudCurrencyText,
+                ))
+                .with_child((TextSpan::default(), font_style.clone()));
             // Integrity stat
             hud_children
                 .spawn((
@@ -110,11 +122,16 @@ fn update_hud(
     hud_depth_text: Query<Entity, With<HudDepthText>>,
     hud_fuel_text: Query<Entity, With<HudFuelText>>,
     hud_inventory_text: Query<Entity, With<HudInventoryText>>,
-    player: Query<(&Health, &Transform, &Fuel, &Inventory), With<Player>>,
+    hud_currency_text: Query<Entity, With<HudCurrencyText>>,
+    player: Query<(&Health, &Transform, &Fuel, &Inventory, &Currency), With<Player>>,
     mut text_writer: TextUiWriter,
 ) {
-    // Updating hud integrity stats
+    // Updating hud stats
     let player_stats = player.single();
+    if let Ok(currency_text_entity) = hud_currency_text.get_single() {
+        let currency_amount = player_stats.4.amount;
+        *text_writer.text(currency_text_entity, 1) = format!("{}", currency_amount);
+    }
     if let Ok(integrity_text_entity) = hud_integrity_text.get_single() {
         let health = player_stats.0;
         *text_writer.text(integrity_text_entity, 1) =

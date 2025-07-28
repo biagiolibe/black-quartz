@@ -1,6 +1,8 @@
 use crate::map::TileType::Empty;
 use crate::map::{TILE_SIZE, Tile, WorldGrid};
+use crate::menu::MenuState;
 use crate::player::DrillState::{Drilling, Falling, Flying, Idle};
+use crate::prelude::MenuState::GameOver;
 use crate::prelude::{GameAssets, GameState, world_grid_position_to_idx, world_to_grid_position};
 use bevy::prelude::*;
 use bevy_rapier2d::prelude::{
@@ -8,6 +10,7 @@ use bevy_rapier2d::prelude::{
     ReadRapierContext, RigidBody, ShapeCastOptions, Velocity,
 };
 use std::collections::{HashSet, VecDeque};
+
 pub struct PlayerPlugin;
 
 #[derive(Component)]
@@ -154,8 +157,7 @@ impl Inventory {
     }
 }
 
-#[derive(Component)]
-#[derive(Debug)]
+#[derive(Component, Debug)]
 pub struct Currency {
     pub amount: u32,
 }
@@ -184,6 +186,7 @@ impl Plugin for PlayerPlugin {
                     (move_player, drill).run_if(in_state(GameState::Playing)),
                     falling_detection,
                     collision_detection,
+                    death_detection,
                 )
                     .chain(),
             ),
@@ -221,17 +224,11 @@ pub fn move_player(
     time: Res<Time>,
     keyboard_input: Res<ButtonInput<KeyCode>>,
     mut query_player: Query<
-        (
-            &mut Velocity,
-            &mut DrillState,
-            &PlayerAttributes,
-            &mut Fuel,
-        ),
+        (&mut Velocity, &mut DrillState, &PlayerAttributes, &mut Fuel),
         With<Player>,
     >,
 ) {
-    if let Ok((mut velocity, mut drill_state, attributes, mut fuel)) =
-        query_player.get_single_mut()
+    if let Ok((mut velocity, mut drill_state, attributes, mut fuel)) = query_player.get_single_mut()
     {
         let direction = keyboard_input
             .get_pressed()
@@ -411,6 +408,18 @@ fn falling_detection(
                 *drill_state = Falling;
             }
         }
+    }
+}
+
+fn death_detection(
+    player: Query<(&Health, &Fuel), With<Player>>,
+    mut next_state: ResMut<NextState<GameState>>,
+    mut next_menu_state: ResMut<NextState<MenuState>>,
+) {
+    let (health, fuel) = player.get_single().unwrap();
+    if health.current <= 0.0 || fuel.current <= 0.0 {
+        next_menu_state.set(GameOver);
+        next_state.set(GameState::Menu);
     }
 }
 
