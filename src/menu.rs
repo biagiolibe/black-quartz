@@ -1,5 +1,5 @@
-use crate::prelude::GameState::Playing;
-use crate::prelude::MenuButton::{Refill, Resume, Sell};
+use crate::prelude::GameState::{Loading, Playing};
+use crate::prelude::MenuButton::{NewGame, Refill, Resume, Sell};
 use crate::prelude::*;
 use bevy::prelude::*;
 use bevy::ui::Interaction::Pressed;
@@ -8,8 +8,8 @@ pub struct MenuPlugin;
 
 #[derive(States, Default, Clone, Eq, PartialEq, Debug, Hash)]
 pub enum MenuState {
-    #[default]
     None,
+    #[default]
     Start,
     GameOver,
     Settings,
@@ -18,36 +18,45 @@ pub enum MenuState {
 }
 #[derive(Component, Debug)]
 pub enum MenuButton {
+    // Base menu buttons
     Sell,
     Refill,
     Resume,
+    // Start screen buttons
+    NewGame,
+    LoadGame,
+    ShowSettings,
+    QuitGame,
+    // Settings buttons
+    BackToStart,
+    // Game over buttons
+    RestartGame,
+    BackToMenu,
 }
 
 impl Plugin for MenuPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(OnEnter(MenuState::WorldBase), handle_base_menu)
-            .add_systems(OnEnter(MenuState::Start), handle_start_menu)
-            .add_systems(OnEnter(MenuState::GameOver), handle_gameover_menu)
-            .add_systems(OnEnter(MenuState::Inventory), handle_inventory_menu)
-            .add_systems(OnEnter(MenuState::Settings), handle_settings_menu)
-            .add_systems(
-                Update,
-                handle_button_interaction.run_if(in_state(GameState::Menu)),
-            )
-            .add_systems(OnExit(GameState::Menu), cleanup_menu);
+        app.add_systems(
+            OnEnter(MenuState::Start),
+            (init_menu, handle_start_menu).chain(),
+        )
+        .add_systems(OnEnter(MenuState::WorldBase), handle_base_menu)
+        .add_systems(OnEnter(MenuState::GameOver), handle_gameover_menu)
+        .add_systems(OnEnter(MenuState::Inventory), handle_inventory_menu)
+        .add_systems(OnEnter(MenuState::Settings), handle_settings_menu)
+        .add_systems(
+            Update,
+            handle_button_interaction.run_if(in_state(GameState::Menu)),
+        )
+        .add_systems(OnExit(GameState::Menu), cleanup_menu);
     }
 }
 
 #[derive(Component)]
 pub struct Menu;
 
-pub fn handle_start_menu() {
-    info!("start menu");
-    //TODO implementation
-}
-
-pub fn handle_base_menu(mut commands: Commands, assets_server: Res<AssetServer>) {
-    info!("base menu");
+pub fn init_menu(mut commands: Commands, assets_server: Res<AssetServer>) {
+    info!("Initializing menu");
     let font = assets_server.load("fonts/FiraSans-Regular.ttf");
 
     let font_style = TextFont {
@@ -55,30 +64,58 @@ pub fn handle_base_menu(mut commands: Commands, assets_server: Res<AssetServer>)
         font_size: 20.0,
         ..Default::default()
     };
+
+    let parent_node = Node {
+        width: Val::Percent(50.0),
+        height: Val::Percent(50.0),
+        position_type: PositionType::Absolute,
+        left: Val::Percent(25.0),
+        top: Val::Percent(25.0),
+        flex_direction: FlexDirection::Column,
+        align_items: AlignItems::Center,
+        justify_content: JustifyContent::SpaceEvenly,
+        padding: UiRect::all(Val::Px(20.)),
+        ..default()
+    };
     commands
         .spawn((
             Node {
                 width: Val::Percent(100.0),
                 height: Val::Percent(100.0),
-                align_items: AlignItems::Center,
-                justify_content: JustifyContent::Center,
+                position_type: PositionType::Absolute,
                 ..default()
             },
             Menu,
+            Visibility::Hidden,
         ))
         .with_children(|parent| {
+            //Start game menu [index-0]
             parent
                 .spawn((
-                    Node {
-                        width: Val::Percent(50.0),
-                        height: Val::Percent(50.0),
-                        flex_direction: FlexDirection::Column,
-                        align_items: AlignItems::Center,
-                        justify_content: JustifyContent::SpaceEvenly,
-                        padding: UiRect::all(Val::Px(20.)),
-                        ..default()
-                    },
+                    parent_node.clone(),
                     BackgroundColor(Color::BLACK),
+                    Visibility::Hidden,
+                ))
+                .with_children(|popup| {
+                    popup.spawn((
+                        Text::new("Drill McDrillface"),
+                        font_style.clone(),
+                        TextColor(Color::WHITE),
+                    ));
+                    popup.spawn((Button, NewGame)).with_children(|button| {
+                        button.spawn((
+                            Text::new("Start game"),
+                            font_style.clone(),
+                            TextColor(Color::WHITE),
+                        ));
+                    });
+                });
+            //World base menu [index-1]
+            parent
+                .spawn((
+                    parent_node.clone(),
+                    BackgroundColor(Color::BLACK),
+                    Visibility::Hidden,
                 ))
                 .with_children(|popup| {
                     popup.spawn((
@@ -86,7 +123,6 @@ pub fn handle_base_menu(mut commands: Commands, assets_server: Res<AssetServer>)
                         font_style.clone(),
                         TextColor(Color::WHITE),
                     ));
-
                     popup.spawn((Button, Sell)).with_children(|button| {
                         button.spawn((
                             Text::new("Sell inventory"),
@@ -109,9 +145,43 @@ pub fn handle_base_menu(mut commands: Commands, assets_server: Res<AssetServer>)
                         ));
                     });
                 });
+            // Game over menu [index-2]
+            parent
+                .spawn((
+                    parent_node.clone(),
+                    BackgroundColor(Color::BLACK),
+                    Visibility::Hidden,
+                ))
+                .with_children(|popup| {
+                    popup.spawn((
+                        Text::new("Game Over"),
+                        font_style.clone(),
+                        TextColor(Color::WHITE),
+                    ));
+                });
         });
 }
+pub fn handle_start_menu(
+    menu_query: Query<(Entity, &Children), With<Menu>>,
+    mut visibility_query: Query<&mut Visibility>,
+) {
+    info!("start menu");
+    if let Ok((entity, children)) = menu_query.get_single() {
+        if let Ok(mut visibility) = visibility_query.get_mut(entity) {
+            *visibility = Visibility::Visible;
+        }
+        if let Some(&child) = children.get(0) {
+            if let Ok(mut child_visibility) = visibility_query.get_mut(child) {
+                *child_visibility = Visibility::Visible;
+            }
+        }
+    }
+}
 
+pub fn handle_base_menu() {
+    info!("base menu");
+    //TODO implementation
+}
 fn handle_button_interaction(
     interaction: Query<(&Interaction, &MenuButton), (Changed<Interaction>, With<Button>)>,
     mut player: Query<(&mut Inventory, &mut Fuel, &mut Currency), With<Player>>,
@@ -132,37 +202,38 @@ fn handle_button_interaction(
                         refill_tank(&mut fuel, &mut currency, &economy);
                     }
                 }
-                Resume => {
-                    next_menu_state.set(MenuState::None);
+                Resume | NewGame => {
                     next_state.set(Playing);
+                    next_menu_state.set(MenuState::None);
                 }
+                _ => {}
             }
         }
     }
 }
 
 fn refill_tank(fuel: &mut Fuel, currency: &mut Currency, economy_config: &Res<EconomyConfig>) {
-    println!("Refill tank");
+    info!("Refill tank");
     let fuel_needed = fuel.max - fuel.current;
     let refill_cost = if fuel_needed <= 10.0 {
         economy_config.fuel_refill_amount
     } else {
         fuel_needed * economy_config.fuel_price_per_unit as f32
     };
-    let (amount_spent, refilled)= if currency.amount >= refill_cost as u32 {
+    let (amount_spent, refilled) = if currency.amount >= refill_cost as u32 {
         (refill_cost as u32, fuel_needed)
     } else {
         let refilled = (currency.amount / economy_config.fuel_price_per_unit) as f32;
         (currency.amount, refilled)
     };
-    println!("Refilled {} spending: {}",refilled, amount_spent);
-    currency.amount-= amount_spent;
+    info!("Refilled {} spending: {}", refilled, amount_spent);
+    currency.amount -= amount_spent;
     fuel.current += refilled;
 }
 
 fn sell_all_inventory(inventory: &mut Inventory, currency: &mut Currency) {
     if inventory.is_empty() {
-        println!("No items to be sold");
+        info!("No items to be sold");
         return;
     }
     let total_to_sell: u32 = inventory
@@ -171,7 +242,7 @@ fn sell_all_inventory(inventory: &mut Inventory, currency: &mut Currency) {
         .map(|i| i.value * i.quantity as u32)
         .sum();
 
-    println!("Total earned: {}", total_to_sell);
+    info!("Total earned: {}", total_to_sell);
     currency.add_amount(total_to_sell);
     inventory.clear();
 }
@@ -188,46 +259,6 @@ pub fn handle_settings_menu() {
 
 pub fn handle_gameover_menu(mut commands: Commands, assets_server: Res<AssetServer>) {
     info!("Game over menu");
-    let font = assets_server.load("fonts/FiraSans-Regular.ttf");
-
-    let font_style = TextFont {
-        font: font.clone(),
-        font_size: 20.0,
-        ..Default::default()
-    };
-    commands
-        .spawn((
-            Node {
-                width: Val::Percent(100.0),
-                height: Val::Percent(100.0),
-                align_items: AlignItems::Center,
-                justify_content: JustifyContent::Center,
-                ..default()
-            },
-            Menu,
-        ))
-        .with_children(|parent| {
-            parent
-                .spawn((
-                    Node {
-                        width: Val::Percent(50.0),
-                        height: Val::Percent(50.0),
-                        flex_direction: FlexDirection::Column,
-                        align_items: AlignItems::Center,
-                        justify_content: JustifyContent::SpaceEvenly,
-                        padding: UiRect::all(Val::Px(20.)),
-                        ..default()
-                    },
-                    BackgroundColor(Color::BLACK),
-                ))
-                .with_children(|popup| {
-                    popup.spawn((
-                        Text::new("Game Over"),
-                        font_style.clone(),
-                        TextColor(Color::WHITE),
-                    ));
-                });
-        });
 }
 
 fn cleanup_menu(mut commands: Commands, menu: Query<Entity, With<Menu>>) {

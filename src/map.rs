@@ -96,7 +96,7 @@ impl Plugin for MapPlugin {
 }
 
 pub fn initialize_world_grid(mut commands: Commands) {
-    println!("Generating map using Cellular Automata algorithm");
+    info!("Generating map using Cellular Automata algorithm");
     // Initialize an empty map
     let mut tiles = vec![vec![Empty; GRID_WIDTH as usize]; GRID_HEIGHT as usize];
     let mut rng = rand::thread_rng();
@@ -137,6 +137,7 @@ pub fn initialize_world_grid(mut commands: Commands) {
             (GRID_HEIGHT as f32) * TILE_SIZE - TILE_SIZE / 2.0,
         ),
     });
+    info!("Map generated");
 }
 
 fn distribute_materials(tiles: &mut Vec<Vec<TileType>>) -> Vec<Vec<TileType>> {

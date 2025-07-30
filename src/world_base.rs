@@ -14,7 +14,7 @@ pub struct WorldBase;
 /// This plugin handles base-related stuff
 impl Plugin for WorldBasePlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(Startup, spawn_base)
+        app.add_systems(OnEnter(GameState::Playing), spawn_base)
             .add_systems(Update, base_access);
     }
 }
@@ -59,7 +59,7 @@ fn base_access(
                     && world_base.get(*collider2).is_ok())
                     || (player.get(*collider2).is_ok() && world_base.get(*collider1).is_ok())
                 {
-                    println!("Player has accessed the base");
+                    info!("Player has accessed the base");
                     next_game_state.set(GameState::Menu);
                     next_menu_state.set(MenuState::WorldBase);
                 };

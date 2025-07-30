@@ -132,7 +132,7 @@ impl Inventory {
                 self.items.push(new_item);
             }
         } else {
-            println!("Inventory full!");
+            info!("Inventory full!");
         }
     }
 
@@ -174,26 +174,28 @@ impl Currency {
 }
 
 /// This plugin handles player-related stuff like movement
-/// Player logic is only active during the State `GameState::Playing`
 impl Plugin for PlayerPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(Startup, spawn_player).add_systems(
-            Update,
-            (
-                update_player_on_state_changes,
-                update_fov,
+        app.add_systems(OnEnter(GameState::Playing), spawn_player)
+            .add_systems(
+                Update,
                 (
-                    (move_player, drill).run_if(in_state(GameState::Playing)),
-                    falling_detection,
-                    collision_detection,
-                    death_detection,
+                    update_player_on_state_changes,
+                    update_fov,
+                    (
+                        (move_player, drill).run_if(in_state(GameState::Playing)),
+                        falling_detection,
+                        collision_detection,
+                        death_detection,
+                    )
+                        .chain(),
                 )
-                    .chain(),
-            ),
-        );
+                    .after(spawn_player),
+            );
     }
 }
 pub fn spawn_player(mut commands: Commands, game_assets: Res<GameAssets>) {
+    info!("spawning player");
     // Drilling Machine (Player)
     commands
         .spawn((
@@ -324,7 +326,7 @@ fn drill(
                     //Update drilling state
                     *drill_state = Drilling;
                 } else {
-                    println!(
+                    warn!(
                         "No tile exists to be drilled on position {:?}",
                         target_index
                     );
@@ -374,7 +376,7 @@ fn collision_detection(
                     if impact_speed > 300.0 {
                         let damage_amount = impact_speed * player_attributes.damage_factor;
                         health.current -= damage_amount;
-                        println!(
+                        info!(
                             "Player collision detected, impact speed {:?}, damage {:?}, player integrity {:?}",
                             impact_speed, damage_amount, health.current
                         );
@@ -416,10 +418,11 @@ fn death_detection(
     mut next_state: ResMut<NextState<GameState>>,
     mut next_menu_state: ResMut<NextState<MenuState>>,
 ) {
-    let (health, fuel) = player.get_single().unwrap();
-    if health.current <= 0.0 || fuel.current <= 0.0 {
-        next_menu_state.set(GameOver);
-        next_state.set(GameState::Menu);
+    if let Ok((health, fuel)) = player.get_single() {
+        if health.current <= 0.0 || fuel.current <= 0.0 {
+            next_menu_state.set(GameOver);
+            next_state.set(GameState::Menu);
+        }
     }
 }
 
@@ -428,54 +431,55 @@ pub fn update_fov(
     mut player_query: Query<(&Transform, Mut<FieldOfView>), With<Player>>,
     world_grid: ResMut<WorldGrid>,
 ) {
-    let (player_transform, mut fov) = player_query.single_mut();
-    let player_pos = IVec2::from(world_to_grid_position(
-        player_transform.translation.truncate(),
-    ));
+    if let Ok((player_transform, mut fov)) = player_query.get_single_mut() {
+        let player_pos = IVec2::from(world_to_grid_position(
+            player_transform.translation.truncate(),
+        ));
 
-    let mut queue = VecDeque::new();
-    queue.push_back((player_pos, 0));
-    let mut visited = vec![player_pos];
+        let mut queue = VecDeque::new();
+        queue.push_back((player_pos, 0));
+        let mut visited = vec![player_pos];
 
-    while let Some((pos, dist)) = queue.pop_front() {
-        if dist > fov.radius {
-            continue;
-        }
-        if visited.contains(&pos) && player_pos != pos {
-            //println!("tile already visited {:?}", pos);
-            continue;
-        }
-        // Add position to list of visited
-        visited.push(pos);
+        while let Some((pos, dist)) = queue.pop_front() {
+            if dist > fov.radius {
+                continue;
+            }
+            if visited.contains(&pos) && player_pos != pos {
+                //info!("tile already visited {:?}", pos);
+                continue;
+            }
+            // Add position to list of visited
+            visited.push(pos);
 
-        let (id_x, id_y) = world_grid_position_to_idx((pos.x, pos.y));
+            let (id_x, id_y) = world_grid_position_to_idx((pos.x, pos.y));
 
-        if id_x >= world_grid.tiles[0].len() || id_y >= world_grid.tiles.len() {
-            //println!("out of bounds ({},{})", id_x, id_y);
-            continue;
-        }
+            if id_x >= world_grid.tiles[0].len() || id_y >= world_grid.tiles.len() {
+                //info!("out of bounds ({},{})", id_x, id_y);
+                continue;
+            }
 
-        //Add to player's fov
-        fov.visible_tiles.insert((pos.x, pos.y));
-        fov.dirty = true;
+            //Add to player's fov
+            fov.visible_tiles.insert((pos.x, pos.y));
+            fov.dirty = true;
 
-        if world_grid.tiles[id_y][id_x] != Empty {
-            continue; // Blocca la propagazione della visibilità
-        }
+            if world_grid.tiles[id_y][id_x] != Empty {
+                continue; // Blocca la propagazione della visibilità
+            }
 
-        let neighbors = [
-            IVec2::new(pos.x + 1, pos.y + 1),
-            IVec2::new(pos.x + 1, pos.y),
-            IVec2::new(pos.x + 1, pos.y - 1),
-            IVec2::new(pos.x, pos.y - 1),
-            IVec2::new(pos.x - 1, pos.y - 1),
-            IVec2::new(pos.x - 1, pos.y),
-            IVec2::new(pos.x - 1, pos.y + 1),
-            IVec2::new(pos.x, pos.y + 1),
-        ];
+            let neighbors = [
+                IVec2::new(pos.x + 1, pos.y + 1),
+                IVec2::new(pos.x + 1, pos.y),
+                IVec2::new(pos.x + 1, pos.y - 1),
+                IVec2::new(pos.x, pos.y - 1),
+                IVec2::new(pos.x - 1, pos.y - 1),
+                IVec2::new(pos.x - 1, pos.y),
+                IVec2::new(pos.x - 1, pos.y + 1),
+                IVec2::new(pos.x, pos.y + 1),
+            ];
 
-        for n in neighbors {
-            queue.push_back((n, dist + 1));
+            for n in neighbors {
+                queue.push_back((n, dist + 1));
+            }
         }
     }
 }

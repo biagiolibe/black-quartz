@@ -6,7 +6,9 @@ use bevy::prelude::*;
 
 #[derive(States, Default, Clone, Eq, PartialEq, Debug, Hash)]
 pub enum GameState {
-    // During the loading State the LoadingPlugin will load our assets
+    // Start window
+    Start,
+    // During the loading State the LoadingPlugin will load assets
     #[default]
     Loading,
     // During this State the actual game logic is executed
@@ -40,11 +42,11 @@ impl Plugin for GamePlugin {
             .add_plugins((
                 LoadingPlugin,
                 MenuPlugin,
-                CameraPlugin,
+                PlayerPlugin,
                 MapPlugin,
+                CameraPlugin,
                 WorldBasePlugin,
                 HUDPlugin,
-                PlayerPlugin,
             ));
         /*
                #[cfg(debug_assertions)]

@@ -1,11 +1,12 @@
 use crate::prelude::*;
 use bevy::prelude::*;
+use crate::prelude::GameState::Loading;
 
 pub struct LoadingPlugin;
 
 impl Plugin for LoadingPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(OnEnter(GameState::Loading), load_assets);
+        app.add_systems(OnEnter(Loading), load_assets);
     }
 }
 
@@ -26,8 +27,9 @@ pub fn load_assets(
     asset_server: Res<AssetServer>,
     mut texture_atlas_layouts: ResMut<Assets<TextureAtlasLayout>>,
     mut next_state: ResMut<NextState<GameState>>,
+    mut next_menu_state: ResMut<NextState<MenuState>>,
 ) {
-    println!("Loading assets");
+    info!("Loading assets");
     //Terrain assets
     let terrain_texture_handle: Handle<Image> = asset_server.load("textures/terrain.png");
     let terrain_layout = TextureAtlasLayout::from_grid(
@@ -75,6 +77,7 @@ pub fn load_assets(
             texture_layout: buildings_layout_handle,
         },
     });
-    println!("Loading complete");
-    next_state.set(GameState::Playing);
+    info!("Loading complete");
+    next_state.set(GameState::Start);
+    next_menu_state.set(MenuState::Start);
 }

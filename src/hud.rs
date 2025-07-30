@@ -1,9 +1,10 @@
 use crate::player::Player;
+use crate::prelude::GameState::Playing;
 use crate::prelude::{Currency, Fuel, Health, Inventory, world_to_grid_position};
 use bevy::prelude::{
     App, AssetServer, BuildChildren, ChildBuild, Color, Commands, Component, Entity, FlexDirection,
-    JustifyContent, Node, Plugin, PositionType, Query, Res, Startup, Text, TextColor, TextFont,
-    TextLayout, TextUiWriter, Transform, Update, Val, With,
+    JustifyContent, Node, OnEnter, Plugin, PositionType, Query, Res, Startup, Text, TextColor,
+    TextFont, TextLayout, TextUiWriter, Transform, Update, Val, With,
 };
 use bevy::text::JustifyText::{Left, Right};
 use bevy::text::TextSpan;
@@ -33,7 +34,7 @@ struct HudCurrencyText;
 
 impl Plugin for HUDPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(Startup, init_hud)
+        app.add_systems(OnEnter(Playing), init_hud)
             .add_systems(Update, update_hud);
     }
 }
@@ -127,26 +128,27 @@ fn update_hud(
     mut text_writer: TextUiWriter,
 ) {
     // Updating hud stats
-    let player_stats = player.single();
-    if let Ok(currency_text_entity) = hud_currency_text.get_single() {
-        let currency_amount = player_stats.4.amount;
-        *text_writer.text(currency_text_entity, 1) = format!("{}", currency_amount);
-    }
-    if let Ok(integrity_text_entity) = hud_integrity_text.get_single() {
-        let health = player_stats.0;
-        *text_writer.text(integrity_text_entity, 1) =
-            format!("{}/{}", health.current.trunc(), health.max);
-    }
-    if let Ok(depth_text_entity) = hud_depth_text.get_single() {
-        let position = world_to_grid_position(player_stats.1.translation.truncate());
-        *text_writer.text(depth_text_entity, 1) = format!("{}", position.1);
-    }
-    if let Ok(fuel_text_entity) = hud_fuel_text.get_single() {
-        let fuel = player_stats.2;
-        *text_writer.text(fuel_text_entity, 1) = format!("{}", fuel.current.trunc());
-    }
-    if let Ok(inventory_text_entity) = hud_inventory_text.get_single() {
-        let inventory = player_stats.3;
-        *text_writer.text(inventory_text_entity, 1) = format!("{:?}", inventory.print_items());
+    if let Ok(player_stats) = player.get_single() {
+        if let Ok(currency_text_entity) = hud_currency_text.get_single() {
+            let currency_amount = player_stats.4.amount;
+            *text_writer.text(currency_text_entity, 1) = format!("{}", currency_amount);
+        }
+        if let Ok(integrity_text_entity) = hud_integrity_text.get_single() {
+            let health = player_stats.0;
+            *text_writer.text(integrity_text_entity, 1) =
+                format!("{}/{}", health.current.trunc(), health.max);
+        }
+        if let Ok(depth_text_entity) = hud_depth_text.get_single() {
+            let position = world_to_grid_position(player_stats.1.translation.truncate());
+            *text_writer.text(depth_text_entity, 1) = format!("{}", position.1);
+        }
+        if let Ok(fuel_text_entity) = hud_fuel_text.get_single() {
+            let fuel = player_stats.2;
+            *text_writer.text(fuel_text_entity, 1) = format!("{}", fuel.current.trunc());
+        }
+        if let Ok(inventory_text_entity) = hud_inventory_text.get_single() {
+            let inventory = player_stats.3;
+            *text_writer.text(inventory_text_entity, 1) = format!("{:?}", inventory.print_items());
+        }
     }
 }
