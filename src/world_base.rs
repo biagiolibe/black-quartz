@@ -1,7 +1,9 @@
 use crate::game::GameState;
+use crate::game::GameSystems::Running;
 use crate::map::TILE_SIZE;
 use crate::player::Player;
-use crate::prelude::{GameAssets, Inventory, MenuState};
+use crate::prelude::GameSystems::Rendering;
+use crate::prelude::{GameAssets, Inventory, LoadingProgress, MenuState};
 use bevy::prelude::*;
 use bevy_rapier2d::pipeline::CollisionEvent;
 use bevy_rapier2d::prelude::{ActiveEvents, Collider, Sensor};
@@ -14,11 +16,15 @@ pub struct WorldBase;
 /// This plugin handles base-related stuff
 impl Plugin for WorldBasePlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(OnEnter(GameState::Playing), spawn_base)
-            .add_systems(Update, base_access);
+        app.add_systems(OnEnter(GameState::Loading), spawn_base.in_set(Rendering))
+            .add_systems(Update, base_access.in_set(Running));
     }
 }
-fn spawn_base(mut commands: Commands, game_assets: Res<GameAssets>) {
+fn spawn_base(
+    mut commands: Commands,
+    game_assets: Res<GameAssets>,
+    mut loading_progress: ResMut<LoadingProgress>,
+) {
     // World Base
     let base_size = TILE_SIZE * 6.0;
     commands
@@ -43,6 +49,7 @@ fn spawn_base(mut commands: Commands, game_assets: Res<GameAssets>) {
                 Sensor,
             ));
         });
+    loading_progress.spawning_base = true;
 }
 
 fn base_access(
@@ -55,8 +62,8 @@ fn base_access(
     for event in collision_events.read() {
         match event {
             CollisionEvent::Started(collider1, collider2, _) => {
-                if (player.get(*collider1).is_ok()
-                    && world_base.get(*collider2).is_ok())
+                info!("collision started {:?}", event);
+                if (player.get(*collider1).is_ok() && world_base.get(*collider2).is_ok())
                     || (player.get(*collider2).is_ok() && world_base.get(*collider1).is_ok())
                 {
                     info!("Player has accessed the base");

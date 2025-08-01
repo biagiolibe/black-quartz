@@ -4,17 +4,22 @@ use crate::prelude::*;
 use bevy::app::App;
 use bevy::prelude::*;
 
+#[derive(SystemSet, Debug, Hash, PartialEq, Eq, Clone)]
+pub enum GameSystems {
+    Loading,
+    Rendering,
+    Running, //TODO create new specific system set for input, movement, physics, ecc
+}
 #[derive(States, Default, Clone, Eq, PartialEq, Debug, Hash)]
 pub enum GameState {
     // Start window
-    Start,
-    // During the loading State the LoadingPlugin will load assets
     #[default]
-    Loading,
-    // During this State the actual game logic is executed
-    Playing,
-    // Here the menu is drawn and waiting for player interaction
-    Menu,
+    Loading, // Caricamento iniziale
+    MainMenu, // Menu principale
+    Menu,     // Menu in game
+    Playing,  // Gioco attivo
+    //Paused,         // Gioco in pausa
+    GameOver, // Fine partita
 }
 
 #[derive(Resource)]
@@ -36,18 +41,25 @@ pub struct GamePlugin;
 
 impl Plugin for GamePlugin {
     fn build(&self, app: &mut App) {
-        app.insert_resource(EconomyConfig::default())
-            .init_state::<GameState>()
-            .init_state::<MenuState>()
-            .add_plugins((
-                LoadingPlugin,
-                MenuPlugin,
-                PlayerPlugin,
-                MapPlugin,
-                CameraPlugin,
-                WorldBasePlugin,
-                HUDPlugin,
-            ));
+        app.configure_sets(
+            OnEnter(GameState::Loading),
+            (
+                GameSystems::Loading,
+                GameSystems::Rendering,
+                GameSystems::Running,
+            )
+                .chain(),
+        )
+        .insert_resource(EconomyConfig::default())
+        .init_state::<GameState>()
+        .init_state::<MenuState>()
+        .add_plugins(ResourcePlugin)
+        .add_plugins(MenuPlugin)
+        .add_plugins(MapPlugin)
+        .add_plugins(WorldBasePlugin)
+        .add_plugins(PlayerPlugin)
+        .add_plugins(CameraPlugin)
+        .add_plugins(HUDPlugin);
         /*
                #[cfg(debug_assertions)]
                {

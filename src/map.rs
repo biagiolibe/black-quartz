@@ -1,12 +1,14 @@
-use crate::loading::GameAssets;
 use crate::map::TileType::Solid;
+use crate::prelude::GameState::Playing;
+use crate::prelude::GameSystems::{Rendering, Running};
 use crate::prelude::TileType::*;
-use crate::prelude::{FieldOfView, Item, Player};
+use crate::prelude::{FieldOfView, GameState, Item, LoadingProgress, Player};
+use crate::resource::GameAssets;
 use bevy::prelude::*;
 use bevy_rapier2d::prelude::{ActiveEvents, Collider, RigidBody};
 use noise::{NoiseFn, Perlin};
 use rand::Rng;
-use std::collections::{HashMap, HashSet};
+use std::collections::{HashMap, HashSet, VecDeque};
 
 pub const TILE_SIZE: f32 = 32.0;
 pub const GRID_WIDTH: isize = 100;
@@ -84,14 +86,17 @@ pub struct FovOverlay;
 impl Plugin for MapPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(
-            Startup,
-            (
-                initialize_world_grid,
-                (render_map, setup_borders).after(initialize_world_grid),
-            )
+            OnEnter(GameState::Loading),
+            (initialize_world_grid, render_map, setup_borders)
+                .in_set(Rendering)
                 .chain(),
         )
-        .add_systems(Update, update_fov_overlay);
+        .add_systems(
+            Update,
+            (update_fov, update_fov_overlay)
+                .in_set(Running)
+                .run_if(in_state(Playing)),
+        );
     }
 }
 
@@ -307,6 +312,64 @@ fn update_fov_overlay(
     }
 }
 
+//TODO improve in some way
+pub fn update_fov(
+    mut player_query: Query<(&Transform, Mut<FieldOfView>), With<Player>>,
+    world_grid: ResMut<WorldGrid>,
+) {
+    if let Ok((player_transform, mut fov)) = player_query.get_single_mut() {
+        let player_pos = IVec2::from(world_to_grid_position(
+            player_transform.translation.truncate(),
+        ));
+
+        let mut queue = VecDeque::new();
+        queue.push_back((player_pos, 0));
+        let mut visited = vec![player_pos];
+
+        while let Some((pos, dist)) = queue.pop_front() {
+            if dist > fov.radius {
+                continue;
+            }
+            if visited.contains(&pos) && player_pos != pos {
+                //info!("tile already visited {:?}", pos);
+                continue;
+            }
+            // Add position to list of visited
+            visited.push(pos);
+
+            let (id_x, id_y) = world_grid_position_to_idx((pos.x, pos.y));
+
+            if id_x >= world_grid.tiles[0].len() || id_y >= world_grid.tiles.len() {
+                //info!("out of bounds ({},{})", id_x, id_y);
+                continue;
+            }
+
+            //Add to player's fov
+            fov.visible_tiles.insert((pos.x, pos.y));
+            fov.dirty = true;
+
+            if world_grid.tiles[id_y][id_x] != Empty {
+                continue; // Blocca la propagazione della visibilità
+            }
+
+            let neighbors = [
+                IVec2::new(pos.x + 1, pos.y + 1),
+                IVec2::new(pos.x + 1, pos.y),
+                IVec2::new(pos.x + 1, pos.y - 1),
+                IVec2::new(pos.x, pos.y - 1),
+                IVec2::new(pos.x - 1, pos.y - 1),
+                IVec2::new(pos.x - 1, pos.y),
+                IVec2::new(pos.x - 1, pos.y + 1),
+                IVec2::new(pos.x, pos.y + 1),
+            ];
+
+            for n in neighbors {
+                queue.push_back((n, dist + 1));
+            }
+        }
+    }
+}
+
 fn get_tile_to_render(tile_type: &TileType) -> (Tile, usize) {
     //TODO use template with RON
     match tile_type {
@@ -401,7 +464,11 @@ pub fn world_grid_position_to_idx(world_grid_position: (i32, i32)) -> (usize, us
     )
 }
 
-fn setup_borders(mut commands: Commands, world_grid: Res<WorldGrid>) {
+fn setup_borders(
+    mut commands: Commands,
+    world_grid: Res<WorldGrid>,
+    mut loading_progress: ResMut<LoadingProgress>,
+) {
     //Top border
     commands.spawn((
         RigidBody::Fixed,
@@ -432,4 +499,5 @@ fn setup_borders(mut commands: Commands, world_grid: Res<WorldGrid>) {
 
     //center border
     commands.spawn((RigidBody::Fixed, Transform::from_xyz(0.0, 0.0, 0.0)));
+    loading_progress.rendering_map = true;
 }

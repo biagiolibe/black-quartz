@@ -2,17 +2,15 @@ use crate::map::WorldGrid;
 use crate::prelude::{move_player, Player};
 use crate::BlackQuartzCamera;
 use bevy::math::Vec2;
-use bevy::prelude::{
-    App, Camera2d, Commands, IntoSystemConfigs, OrthographicProjection, Plugin, Query, Res,
-    Startup, Transform, Update, With, Without,
-};
+use bevy::prelude::{in_state, App, Camera2d, Commands, IntoSystemConfigs, OrthographicProjection, Plugin, Query, Res, Startup, Transform, Update, With, Without};
+use crate::game::GameState::Playing;
 
 pub struct CameraPlugin;
 
 impl Plugin for CameraPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(Startup, setup_camera)
-            .add_systems(Update, follow_player.after(move_player));
+            .add_systems(Update, follow_player.run_if(in_state(Playing)));
     }
 }
 

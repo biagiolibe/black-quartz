@@ -1,6 +1,6 @@
 mod game;
 mod hud;
-mod loading;
+mod resource;
 mod map;
 mod menu;
 mod player;
@@ -11,7 +11,7 @@ mod prelude {
     pub use crate::camera::*;
     pub use crate::game::*;
     pub use crate::hud::*;
-    pub use crate::loading::*;
+    pub use crate::resource::*;
     pub use crate::map::*;
     pub use crate::menu::*;
     pub use crate::player::*;

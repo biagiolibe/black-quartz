@@ -1,4 +1,3 @@
-use crate::prelude::GameState::{Loading, Playing};
 use crate::prelude::MenuButton::{NewGame, Refill, Resume, Sell};
 use crate::prelude::*;
 use bevy::prelude::*;
@@ -18,37 +17,50 @@ pub enum MenuState {
 }
 #[derive(Component, Debug)]
 pub enum MenuButton {
-    // Base menu buttons
     Sell,
     Refill,
     Resume,
-    // Start screen buttons
     NewGame,
-    LoadGame,
     ShowSettings,
     QuitGame,
-    // Settings buttons
-    BackToStart,
-    // Game over buttons
-    RestartGame,
-    BackToMenu,
 }
 
 impl Plugin for MenuPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(
-            OnEnter(MenuState::Start),
-            (init_menu, handle_start_menu).chain(),
+            OnEnter(GameState::MainMenu),
+            (init_menu, handle_start_menu)
+                .in_set(GameSystems::Rendering)
+                .chain(),
         )
-        .add_systems(OnEnter(MenuState::WorldBase), handle_base_menu)
-        .add_systems(OnEnter(MenuState::GameOver), handle_gameover_menu)
-        .add_systems(OnEnter(MenuState::Inventory), handle_inventory_menu)
-        .add_systems(OnEnter(MenuState::Settings), handle_settings_menu)
+        .add_systems(
+            OnEnter(MenuState::WorldBase),
+            handle_base_menu.in_set(GameSystems::Running),
+        )
+        .add_systems(
+            OnEnter(MenuState::GameOver),
+            handle_gameover_menu.in_set(GameSystems::Running),
+        )
+        .add_systems(
+            OnEnter(MenuState::Inventory),
+            handle_inventory_menu.in_set(GameSystems::Running),
+        )
+        .add_systems(
+            OnEnter(MenuState::Settings),
+            handle_settings_menu.in_set(GameSystems::Running),
+        )
         .add_systems(
             Update,
-            handle_button_interaction.run_if(in_state(GameState::Menu)),
+            handle_button_interaction.in_set(GameSystems::Rendering),
         )
-        .add_systems(OnExit(GameState::Menu), cleanup_menu);
+        .add_systems(
+            OnExit(GameState::Menu),
+            cleanup_menu.in_set(GameSystems::Running),
+        )
+        .add_systems(
+            OnExit(GameState::MainMenu),
+            cleanup_menu.in_set(GameSystems::Rendering),
+        );
     }
 }
 
@@ -163,24 +175,34 @@ pub fn init_menu(mut commands: Commands, assets_server: Res<AssetServer>) {
 }
 pub fn handle_start_menu(
     menu_query: Query<(Entity, &Children), With<Menu>>,
-    mut visibility_query: Query<&mut Visibility>,
+    visibility_query: Query<&mut Visibility>,
 ) {
     info!("start menu");
     if let Ok((entity, children)) = menu_query.get_single() {
-        if let Ok(mut visibility) = visibility_query.get_mut(entity) {
-            *visibility = Visibility::Visible;
-        }
-        if let Some(&child) = children.get(0) {
-            if let Ok(mut child_visibility) = visibility_query.get_mut(child) {
-                *child_visibility = Visibility::Visible;
-            }
-        }
+        set_visibility_recursive(
+            Visibility::Visible,
+            entity,
+            children,
+            Some(0),
+            visibility_query,
+        );
     }
 }
 
-pub fn handle_base_menu() {
+pub fn handle_base_menu(
+    menu_query: Query<(Entity, &Children), With<Menu>>,
+    visibility_query: Query<&mut Visibility>,
+) {
     info!("base menu");
-    //TODO implementation
+    if let Ok((entity, children)) = menu_query.get_single() {
+        set_visibility_recursive(
+            Visibility::Visible,
+            entity,
+            children,
+            Some(1),
+            visibility_query,
+        );
+    }
 }
 fn handle_button_interaction(
     interaction: Query<(&Interaction, &MenuButton), (Changed<Interaction>, With<Button>)>,
@@ -202,8 +224,12 @@ fn handle_button_interaction(
                         refill_tank(&mut fuel, &mut currency, &economy);
                     }
                 }
-                Resume | NewGame => {
-                    next_state.set(Playing);
+                NewGame => {
+                    next_state.set(GameState::Playing);
+                    next_menu_state.set(MenuState::None);
+                }
+                Resume => {
+                    next_state.set(GameState::Playing);
                     next_menu_state.set(MenuState::None);
                 }
                 _ => {}
@@ -261,8 +287,34 @@ pub fn handle_gameover_menu(mut commands: Commands, assets_server: Res<AssetServ
     info!("Game over menu");
 }
 
-fn cleanup_menu(mut commands: Commands, menu: Query<Entity, With<Menu>>) {
-    for entity in menu.iter() {
-        commands.entity(entity).despawn_recursive();
+fn cleanup_menu(
+    menu_query: Query<(Entity, &Children), With<Menu>>,
+    visibility_query: Query<&mut Visibility>,
+) {
+    info!("Cleanup menu");
+    if let Ok((entity, children)) = menu_query.get_single() {
+        set_visibility_recursive(Visibility::Hidden, entity, children, None, visibility_query);
     }
+}
+
+fn set_visibility_recursive(
+    visibility_target: Visibility,
+    menu_entity: Entity,
+    children: &Children,
+    child_index: Option<usize>,
+    mut visibility_query: Query<&mut Visibility>,
+) {
+    if let Ok(mut visibility) = visibility_query.get_mut(menu_entity) {
+        *visibility = visibility_target;
+    }
+
+    children
+        .iter()
+        .enumerate()
+        .filter(|(index, _)| child_index.is_none_or(|idx| *index == idx))
+        .for_each(|(_, entity)| {
+            if let Ok(mut visibility) = visibility_query.get_mut(*entity) {
+                *visibility = visibility_target;
+            };
+        });
 }

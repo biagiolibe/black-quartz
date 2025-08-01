@@ -2,6 +2,7 @@ use crate::map::TileType::Empty;
 use crate::map::{TILE_SIZE, Tile, WorldGrid};
 use crate::menu::MenuState;
 use crate::player::DrillState::{Drilling, Falling, Flying, Idle};
+use crate::prelude::GameSystems::{Rendering, Running};
 use crate::prelude::MenuState::GameOver;
 use crate::prelude::{GameAssets, GameState, world_grid_position_to_idx, world_to_grid_position};
 use bevy::prelude::*;
@@ -88,7 +89,7 @@ pub enum DrillState {
 #[derive(Component, Clone, PartialEq)]
 pub struct FieldOfView {
     pub visible_tiles: HashSet<(i32, i32)>,
-    radius: i32,
+    pub(crate) radius: i32,
     pub dirty: bool,
 }
 impl Default for FieldOfView {
@@ -176,21 +177,19 @@ impl Currency {
 /// This plugin handles player-related stuff like movement
 impl Plugin for PlayerPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(OnEnter(GameState::Playing), spawn_player)
+        app.add_systems(OnEnter(GameState::Loading), spawn_player.in_set(Rendering))
             .add_systems(
                 Update,
                 (
-                    update_player_on_state_changes,
-                    update_fov,
-                    (
-                        (move_player, drill).run_if(in_state(GameState::Playing)),
-                        falling_detection,
-                        collision_detection,
-                        death_detection,
-                    )
-                        .chain(),
+                    update_player_on_state_changes.in_set(Running),
+                    (move_player, drill)
+                        .in_set(Running)
+                        .run_if(in_state(GameState::Playing)),
+                    falling_detection.in_set(Running),
+                    collision_detection.in_set(Running),
+                    death_detection.in_set(Running),
                 )
-                    .after(spawn_player),
+                    .chain(),
             );
     }
 }
@@ -422,64 +421,6 @@ fn death_detection(
         if health.current <= 0.0 || fuel.current <= 0.0 {
             next_menu_state.set(GameOver);
             next_state.set(GameState::Menu);
-        }
-    }
-}
-
-//TODO improve in some way
-pub fn update_fov(
-    mut player_query: Query<(&Transform, Mut<FieldOfView>), With<Player>>,
-    world_grid: ResMut<WorldGrid>,
-) {
-    if let Ok((player_transform, mut fov)) = player_query.get_single_mut() {
-        let player_pos = IVec2::from(world_to_grid_position(
-            player_transform.translation.truncate(),
-        ));
-
-        let mut queue = VecDeque::new();
-        queue.push_back((player_pos, 0));
-        let mut visited = vec![player_pos];
-
-        while let Some((pos, dist)) = queue.pop_front() {
-            if dist > fov.radius {
-                continue;
-            }
-            if visited.contains(&pos) && player_pos != pos {
-                //info!("tile already visited {:?}", pos);
-                continue;
-            }
-            // Add position to list of visited
-            visited.push(pos);
-
-            let (id_x, id_y) = world_grid_position_to_idx((pos.x, pos.y));
-
-            if id_x >= world_grid.tiles[0].len() || id_y >= world_grid.tiles.len() {
-                //info!("out of bounds ({},{})", id_x, id_y);
-                continue;
-            }
-
-            //Add to player's fov
-            fov.visible_tiles.insert((pos.x, pos.y));
-            fov.dirty = true;
-
-            if world_grid.tiles[id_y][id_x] != Empty {
-                continue; // Blocca la propagazione della visibilità
-            }
-
-            let neighbors = [
-                IVec2::new(pos.x + 1, pos.y + 1),
-                IVec2::new(pos.x + 1, pos.y),
-                IVec2::new(pos.x + 1, pos.y - 1),
-                IVec2::new(pos.x, pos.y - 1),
-                IVec2::new(pos.x - 1, pos.y - 1),
-                IVec2::new(pos.x - 1, pos.y),
-                IVec2::new(pos.x - 1, pos.y + 1),
-                IVec2::new(pos.x, pos.y + 1),
-            ];
-
-            for n in neighbors {
-                queue.push_back((n, dist + 1));
-            }
         }
     }
 }
