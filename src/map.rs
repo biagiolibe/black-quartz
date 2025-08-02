@@ -86,7 +86,7 @@ pub struct FovOverlay;
 impl Plugin for MapPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(
-            OnEnter(GameState::Loading),
+            OnEnter(GameState::Rendering),
             (initialize_world_grid, render_map, setup_borders)
                 .in_set(Rendering)
                 .chain(),

@@ -16,7 +16,7 @@ pub struct WorldBase;
 /// This plugin handles base-related stuff
 impl Plugin for WorldBasePlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(OnEnter(GameState::Loading), spawn_base.in_set(Rendering))
+        app.add_systems(OnEnter(GameState::Rendering), spawn_base.in_set(Rendering))
             .add_systems(Update, base_access.in_set(Running));
     }
 }

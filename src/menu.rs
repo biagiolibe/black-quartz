@@ -21,7 +21,6 @@ pub enum MenuButton {
     Refill,
     Resume,
     NewGame,
-    ShowSettings,
     QuitGame,
 }
 
@@ -225,7 +224,7 @@ fn handle_button_interaction(
                     }
                 }
                 NewGame => {
-                    next_state.set(GameState::Playing);
+                    next_state.set(GameState::Rendering);
                     next_menu_state.set(MenuState::None);
                 }
                 Resume => {

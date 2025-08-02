@@ -1,5 +1,5 @@
 use crate::game::GameState::Playing;
-use crate::prelude::GameState::{Loading, MainMenu};
+use crate::prelude::GameState::{Loading, MainMenu, Rendering};
 use crate::prelude::*;
 use bevy::prelude::*;
 
@@ -17,7 +17,7 @@ impl Plugin for ResourcePlugin {
     fn build(&self, app: &mut App) {
         app.init_resource::<LoadingProgress>()
             .add_systems(OnEnter(Loading), load_assets.in_set(GameSystems::Loading))
-            .add_systems(Update, check_loading_progress);
+            .add_systems(Update, check_loading_progress.run_if(in_state(Rendering)));
     }
 }
 
@@ -75,6 +75,7 @@ pub fn load_assets(
     });
     info!("Loading complete");
     loading_progress.loading_assets = true;
+    next_state.set(MainMenu);
 }
 
 pub fn check_loading_progress(
@@ -87,6 +88,6 @@ pub fn check_loading_progress(
         && loading_progress.spawning_base
         && loading_progress.init_camera
     {
-        next_state.set(MainMenu);
+        next_state.set(Playing);
     }
 }

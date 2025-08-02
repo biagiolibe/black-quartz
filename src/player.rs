@@ -4,7 +4,7 @@ use crate::menu::MenuState;
 use crate::player::DrillState::{Drilling, Falling, Flying, Idle};
 use crate::prelude::GameSystems::{Rendering, Running};
 use crate::prelude::MenuState::GameOver;
-use crate::prelude::{GameAssets, GameState, world_grid_position_to_idx, world_to_grid_position};
+use crate::prelude::{GameAssets, GameState, world_grid_position_to_idx, world_to_grid_position, LoadingProgress};
 use bevy::prelude::*;
 use bevy_rapier2d::prelude::{
     ActiveEvents, Collider, CollisionEvent, Damping, GravityScale, LockedAxes, QueryFilter,
@@ -13,6 +13,26 @@ use bevy_rapier2d::prelude::{
 use std::collections::{HashSet, VecDeque};
 
 pub struct PlayerPlugin;
+
+/// This plugin handles player-related stuff like movement
+impl Plugin for PlayerPlugin {
+    fn build(&self, app: &mut App) {
+        app.add_systems(OnEnter(GameState::Rendering), spawn_player.in_set(Rendering))
+            .add_systems(
+                Update,
+                (
+                    update_player_on_state_changes.in_set(Running),
+                    (move_player, drill)
+                        .in_set(Running)
+                        .run_if(in_state(GameState::Playing)),
+                    falling_detection.in_set(Running),
+                    collision_detection.in_set(Running),
+                    death_detection.in_set(Running),
+                )
+                    .chain(),
+            );
+    }
+}
 
 #[derive(Component)]
 #[require(
@@ -174,26 +194,8 @@ impl Currency {
     }
 }
 
-/// This plugin handles player-related stuff like movement
-impl Plugin for PlayerPlugin {
-    fn build(&self, app: &mut App) {
-        app.add_systems(OnEnter(GameState::Loading), spawn_player.in_set(Rendering))
-            .add_systems(
-                Update,
-                (
-                    update_player_on_state_changes.in_set(Running),
-                    (move_player, drill)
-                        .in_set(Running)
-                        .run_if(in_state(GameState::Playing)),
-                    falling_detection.in_set(Running),
-                    collision_detection.in_set(Running),
-                    death_detection.in_set(Running),
-                )
-                    .chain(),
-            );
-    }
-}
-pub fn spawn_player(mut commands: Commands, game_assets: Res<GameAssets>) {
+pub fn spawn_player(mut commands: Commands, game_assets: Res<GameAssets>,
+mut loading_progress: ResMut<LoadingProgress>) {
     info!("spawning player");
     // Drilling Machine (Player)
     commands
@@ -220,6 +222,7 @@ pub fn spawn_player(mut commands: Commands, game_assets: Res<GameAssets>) {
             Velocity::zero(),
         ))
         .insert(LockedAxes::ROTATION_LOCKED);
+    loading_progress.spawning_player = true;
 }
 pub fn move_player(
     time: Res<Time>,

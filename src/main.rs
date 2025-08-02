@@ -11,10 +11,10 @@ mod prelude {
     pub use crate::camera::*;
     pub use crate::game::*;
     pub use crate::hud::*;
-    pub use crate::resource::*;
     pub use crate::map::*;
     pub use crate::menu::*;
     pub use crate::player::*;
+    pub use crate::resource::*;
     pub use crate::world_base::*;
 }
 

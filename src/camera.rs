@@ -1,9 +1,12 @@
-use crate::map::WorldGrid;
-use crate::prelude::{move_player, Player};
 use crate::BlackQuartzCamera;
-use bevy::math::Vec2;
-use bevy::prelude::{in_state, App, Camera2d, Commands, IntoSystemConfigs, OrthographicProjection, Plugin, Query, Res, Startup, Transform, Update, With, Without};
 use crate::game::GameState::Playing;
+use crate::map::WorldGrid;
+use crate::prelude::{LoadingProgress, Player, move_player};
+use bevy::math::Vec2;
+use bevy::prelude::{
+    App, Camera2d, Commands, IntoSystemConfigs, OrthographicProjection, Plugin, Query, Res, ResMut,
+    Startup, Transform, Update, With, Without, in_state,
+};
 
 pub struct CameraPlugin;
 
@@ -14,7 +17,7 @@ impl Plugin for CameraPlugin {
     }
 }
 
-fn setup_camera(mut commands: Commands) {
+fn setup_camera(mut commands: Commands, mut loading_progress: ResMut<LoadingProgress>) {
     commands.spawn((
         Camera2d::default(),
         OrthographicProjection {
@@ -27,6 +30,7 @@ fn setup_camera(mut commands: Commands) {
         },
         BlackQuartzCamera,
     ));
+    loading_progress.init_camera = true;
 }
 
 fn follow_player(
@@ -44,12 +48,14 @@ fn follow_player(
         let camera_area = &camera.area;
 
         if player_pos.x + camera_area.max.x <= world_grid.map_area.max.x
-            && player_pos.x + camera_area.min.x >= world_grid.map_area.min.x {
+            && player_pos.x + camera_area.min.x >= world_grid.map_area.min.x
+        {
             camera_pos.translation.x = player_pos.x;
         }
 
         if player_pos.y + camera_area.max.y <= world_grid.map_area.max.y
-            && player_pos.y + camera_area.min.y >= world_grid.map_area.min.y {
+            && player_pos.y + camera_area.min.y >= world_grid.map_area.min.y
+        {
             camera_pos.translation.y = player_pos.y;
         }
     }

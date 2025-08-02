@@ -15,9 +15,10 @@ pub enum GameState {
     // Start window
     #[default]
     Loading, // Caricamento iniziale
-    MainMenu, // Menu principale
-    Menu,     // Menu in game
-    Playing,  // Gioco attivo
+    MainMenu,  // Menu principale
+    Rendering, // Rendering iniziale
+    Menu,      // Menu in game
+    Playing,   // Gioco attivo
     //Paused,         // Gioco in pausa
     GameOver, // Fine partita
 }
@@ -43,6 +44,15 @@ impl Plugin for GamePlugin {
     fn build(&self, app: &mut App) {
         app.configure_sets(
             OnEnter(GameState::Loading),
+            (
+                GameSystems::Loading,
+                GameSystems::Rendering,
+                GameSystems::Running,
+            )
+                .chain(),
+        )
+        .configure_sets(
+            Update,
             (
                 GameSystems::Loading,
                 GameSystems::Rendering,
