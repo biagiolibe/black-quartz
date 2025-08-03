@@ -8,7 +8,12 @@ use bevy::prelude::*;
 pub enum GameSystems {
     Loading,
     Rendering,
-    Running, //TODO create new specific system set for input, movement, physics, ecc
+    Running,
+    Movement,
+    Physics,
+    Camera,
+    Collision,
+    Ui
 }
 #[derive(States, Default, Clone, Eq, PartialEq, Debug, Hash)]
 pub enum GameState {
@@ -56,7 +61,11 @@ impl Plugin for GamePlugin {
             (
                 GameSystems::Loading,
                 GameSystems::Rendering,
-                GameSystems::Running,
+                GameSystems::Movement,
+                GameSystems::Camera,
+                GameSystems::Physics,
+                GameSystems::Collision,
+                GameSystems::Ui
             )
                 .chain(),
         )
@@ -66,9 +75,9 @@ impl Plugin for GamePlugin {
         .add_plugins(ResourcePlugin)
         .add_plugins(MenuPlugin)
         .add_plugins(MapPlugin)
+        .add_plugins(CameraPlugin)
         .add_plugins(WorldBasePlugin)
         .add_plugins(PlayerPlugin)
-        .add_plugins(CameraPlugin)
         .add_plugins(HUDPlugin);
         /*
                #[cfg(debug_assertions)]

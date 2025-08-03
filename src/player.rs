@@ -23,12 +23,12 @@ impl Plugin for PlayerPlugin {
                 (
                     update_player_on_state_changes.in_set(Running),
                     (move_player, drill)
-                        .in_set(Running)
-                        .run_if(in_state(GameState::Playing)),
+                        .in_set(Running),
                     falling_detection.in_set(Running),
                     collision_detection.in_set(Running),
                     death_detection.in_set(Running),
                 )
+                    .run_if(in_state(GameState::Playing))
                     .chain(),
             );
     }

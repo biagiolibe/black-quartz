@@ -2,7 +2,8 @@ use crate::game::GameState;
 use crate::game::GameSystems::Running;
 use crate::map::TILE_SIZE;
 use crate::player::Player;
-use crate::prelude::GameSystems::Rendering;
+use crate::prelude::GameState::Playing;
+use crate::prelude::GameSystems::{Rendering, Ui};
 use crate::prelude::{GameAssets, Inventory, LoadingProgress, MenuState};
 use bevy::prelude::*;
 use bevy_rapier2d::pipeline::CollisionEvent;
@@ -16,8 +17,8 @@ pub struct WorldBase;
 /// This plugin handles base-related stuff
 impl Plugin for WorldBasePlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(OnEnter(GameState::Rendering), spawn_base.in_set(Rendering))
-            .add_systems(Update, base_access.in_set(Running));
+        app.add_systems(OnEnter(GameState::Rendering), spawn_base)
+            .add_systems(Update, base_access.in_set(Ui).run_if(in_state(Playing)));
     }
 }
 fn spawn_base(

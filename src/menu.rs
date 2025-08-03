@@ -34,31 +34,31 @@ impl Plugin for MenuPlugin {
         )
         .add_systems(
             OnEnter(MenuState::WorldBase),
-            handle_base_menu.in_set(GameSystems::Running),
+            handle_base_menu,
         )
         .add_systems(
             OnEnter(MenuState::GameOver),
-            handle_gameover_menu.in_set(GameSystems::Running),
+            handle_gameover_menu,
         )
         .add_systems(
             OnEnter(MenuState::Inventory),
-            handle_inventory_menu.in_set(GameSystems::Running),
+            handle_inventory_menu,
         )
         .add_systems(
             OnEnter(MenuState::Settings),
-            handle_settings_menu.in_set(GameSystems::Running),
+            handle_settings_menu,
         )
         .add_systems(
             Update,
-            handle_button_interaction.in_set(GameSystems::Rendering),
+            handle_button_interaction.in_set(GameSystems::Ui),
         )
         .add_systems(
             OnExit(GameState::Menu),
-            cleanup_menu.in_set(GameSystems::Running),
+            cleanup_menu,
         )
         .add_systems(
             OnExit(GameState::MainMenu),
-            cleanup_menu.in_set(GameSystems::Rendering),
+            cleanup_menu,
         );
     }
 }
@@ -240,7 +240,7 @@ fn handle_button_interaction(
 fn refill_tank(fuel: &mut Fuel, currency: &mut Currency, economy_config: &Res<EconomyConfig>) {
     info!("Refill tank");
     let fuel_needed = fuel.max - fuel.current;
-    let refill_cost = if fuel_needed <= 10.0 {
+    let refill_cost = if fuel_needed >= 90.0 {
         economy_config.fuel_refill_amount
     } else {
         fuel_needed * economy_config.fuel_price_per_unit as f32
@@ -270,6 +270,8 @@ fn sell_all_inventory(inventory: &mut Inventory, currency: &mut Currency) {
     info!("Total earned: {}", total_to_sell);
     currency.add_amount(total_to_sell);
     inventory.clear();
+    info!("Inventory {:?}", inventory.items);
+    info!("Currency: {}", currency.amount);
 }
 
 pub fn handle_inventory_menu() {
@@ -311,9 +313,9 @@ fn set_visibility_recursive(
         .iter()
         .enumerate()
         .filter(|(index, _)| child_index.is_none_or(|idx| *index == idx))
-        .for_each(|(_, entity)| {
+        .for_each(|(id, entity)| {
             if let Ok(mut visibility) = visibility_query.get_mut(*entity) {
-                *visibility = visibility_target;
+                    *visibility = visibility_target;
             };
         });
 }

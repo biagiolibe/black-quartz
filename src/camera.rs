@@ -7,13 +7,15 @@ use bevy::prelude::{
     App, Camera2d, Commands, IntoSystemConfigs, OrthographicProjection, Plugin, Query, Res, ResMut,
     Startup, Transform, Update, With, Without, in_state,
 };
+use crate::game::GameSystems::Rendering;
+use crate::prelude::GameSystems::Running;
 
 pub struct CameraPlugin;
 
 impl Plugin for CameraPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(Startup, setup_camera)
-            .add_systems(Update, follow_player.run_if(in_state(Playing)));
+            .add_systems(Update, follow_player.in_set(Rendering).run_if(in_state(Playing)));
     }
 }
 
