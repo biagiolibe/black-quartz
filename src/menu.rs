@@ -1,4 +1,4 @@
-use crate::prelude::MenuButton::{NewGame, Refill, Resume, Sell};
+use crate::prelude::MenuButton::{NewGame, QuitGame, Refill, Resume, Sell};
 use crate::prelude::*;
 use bevy::prelude::*;
 use bevy::ui::Interaction::Pressed;
@@ -103,7 +103,14 @@ pub fn init_menu(mut commands: Commands, assets_server: Res<AssetServer>) {
             //Start game menu [index-0]
             parent
                 .spawn((
-                    parent_node.clone(),
+                    Node {
+                        width: Val::Percent(100.0),
+                        height: Val::Percent(100.0),
+                        flex_direction: FlexDirection::Column,
+                        align_items: AlignItems::Center,
+                        justify_content: JustifyContent::SpaceBetween,
+                        ..default()
+                    },
                     BackgroundColor(Color::BLACK),
                     Visibility::Hidden,
                 ))
@@ -113,13 +120,28 @@ pub fn init_menu(mut commands: Commands, assets_server: Res<AssetServer>) {
                         font_style.clone(),
                         TextColor(Color::WHITE),
                     ));
-                    popup.spawn((Button, NewGame)).with_children(|button| {
-                        button.spawn((
-                            Text::new("Start game"),
-                            font_style.clone(),
-                            TextColor(Color::WHITE),
-                        ));
-                    });
+
+                    popup
+                        .spawn((
+                            Node {
+                                width: Val::Percent(100.0),
+                                height: Val::Percent(60.0), // Occupa la parte centrale
+                                flex_direction: FlexDirection::Row,
+                                justify_content: JustifyContent::Start, // Allinea a sinistra
+                                align_items: AlignItems::Center,        // Centro verticalmente
+                                padding: UiRect::left(Val::Px(100.0)),  // Margine da sinistra
+                                ..default()
+                            },
+                        ))
+                        .with_children(|popup| {
+                            popup.spawn((Button, NewGame)).with_children(|button| {
+                                button.spawn((
+                                    Text::new("Start game"),
+                                    font_style.clone(),
+                                    TextColor(Color::WHITE),
+                                ));
+                            });
+                        });
                 });
             //World base menu [index-1]
             parent
@@ -169,6 +191,20 @@ pub fn init_menu(mut commands: Commands, assets_server: Res<AssetServer>) {
                         font_style.clone(),
                         TextColor(Color::WHITE),
                     ));
+                    popup.spawn((Button, NewGame)).with_children(|button| {
+                        button.spawn((
+                            Text::new("Restart game"),
+                            font_style.clone(),
+                            TextColor(Color::WHITE),
+                        ));
+                    });
+                    popup.spawn((Button, QuitGame)).with_children(|button| {
+                        button.spawn((
+                            Text::new("Exit game"),
+                            font_style.clone(),
+                            TextColor(Color::WHITE),
+                        ));
+                    });
                 });
         });
 }
@@ -231,6 +267,10 @@ fn handle_button_interaction(
                     next_state.set(GameState::Playing);
                     next_menu_state.set(MenuState::None);
                 }
+                QuitGame => {
+                    next_state.set(GameState::GameOver);
+                    next_menu_state.set(MenuState::None);
+                }
                 _ => {}
             }
         }
@@ -241,6 +281,7 @@ fn refill_tank(fuel: &mut Fuel, currency: &mut Currency, economy_config: &Res<Ec
     info!("Refill tank");
     let fuel_needed = fuel.max - fuel.current;
     let refill_cost = if fuel_needed >= 90.0 {
+        info!("Fuel low: {}", fuel_needed);
         economy_config.fuel_refill_amount
     } else {
         fuel_needed * economy_config.fuel_price_per_unit as f32
@@ -284,8 +325,20 @@ pub fn handle_settings_menu() {
     //TODO implementation
 }
 
-pub fn handle_gameover_menu(mut commands: Commands, assets_server: Res<AssetServer>) {
+pub fn handle_gameover_menu(
+    menu_query: Query<(Entity, &Children), With<Menu>>,
+    visibility_query: Query<&mut Visibility>,
+) {
     info!("Game over menu");
+    if let Ok((entity, children)) = menu_query.get_single() {
+        set_visibility_recursive(
+            Visibility::Visible,
+            entity,
+            children,
+            Some(2),
+            visibility_query,
+        );
+    }
 }
 
 fn cleanup_menu(

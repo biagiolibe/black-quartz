@@ -19,13 +19,13 @@ pub enum GameSystems {
 pub enum GameState {
     // Start window
     #[default]
-    Loading, // Caricamento iniziale
+    Loading,   // Caricamento iniziale
     MainMenu,  // Menu principale
     Rendering, // Rendering iniziale
     Menu,      // Menu in game
     Playing,   // Gioco attivo
-    //Paused,         // Gioco in pausa
-    GameOver, // Fine partita
+    //Paused,  // Gioco in pausa
+    GameOver,  // Fine partita
 }
 
 #[derive(Resource)]
@@ -56,29 +56,30 @@ impl Plugin for GamePlugin {
             )
                 .chain(),
         )
-        .configure_sets(
-            Update,
-            (
-                GameSystems::Loading,
-                GameSystems::Rendering,
-                GameSystems::Movement,
-                GameSystems::Camera,
-                GameSystems::Physics,
-                GameSystems::Collision,
-                GameSystems::Ui
+            .configure_sets(
+                Update,
+                (
+                    GameSystems::Loading,
+                    GameSystems::Rendering,
+                    GameSystems::Movement,
+                    GameSystems::Camera,
+                    GameSystems::Physics,
+                    GameSystems::Collision,
+                    GameSystems::Ui
+                )
+                    .chain(),
             )
-                .chain(),
-        )
-        .insert_resource(EconomyConfig::default())
-        .init_state::<GameState>()
-        .init_state::<MenuState>()
-        .add_plugins(ResourcePlugin)
-        .add_plugins(MenuPlugin)
-        .add_plugins(MapPlugin)
-        .add_plugins(CameraPlugin)
-        .add_plugins(WorldBasePlugin)
-        .add_plugins(PlayerPlugin)
-        .add_plugins(HUDPlugin);
+            .insert_resource(EconomyConfig::default())
+            .init_state::<GameState>()
+            .init_state::<MenuState>()
+            .add_plugins(ResourcePlugin)
+            .add_plugins(MenuPlugin)
+            .add_plugins(MapPlugin)
+            .add_plugins(CameraPlugin)
+            .add_plugins(WorldBasePlugin)
+            .add_plugins(PlayerPlugin)
+            .add_plugins(HUDPlugin)
+            .add_systems(OnEnter(GameState::GameOver), exit_game);
         /*
                #[cfg(debug_assertions)]
                {
@@ -86,4 +87,8 @@ impl Plugin for GamePlugin {
                }
         */
     }
+}
+
+fn exit_game(mut exit: EventWriter<AppExit>) {
+    exit.send(AppExit::Success);
 }

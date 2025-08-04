@@ -1,15 +1,14 @@
-use crate::game::GameSystems::Rendering;
 use crate::player::Player;
-use crate::prelude::GameState::Playing;
-use crate::prelude::{Currency, Fuel, Health, Inventory, world_to_grid_position};
-use bevy::prelude::{info, App, AssetServer, BuildChildren, ChildBuild, Color, Commands, Component, Entity, FlexDirection, IntoSystemConfigs, JustifyContent, Node, OnEnter, Plugin, PositionType, Query, Res, Text, TextColor, TextFont, TextLayout, TextUiWriter, Transform, Update, Val, With};
+use crate::prelude::GameSystems::Ui;
+use crate::prelude::{world_to_grid_position, Currency, Fuel, Health, Inventory};
+use bevy::prelude::{App, AssetServer, BuildChildren, ChildBuild, Color, Commands, Component, Entity, FlexDirection, IntoSystemConfigs, JustifyContent, Node, OnEnter, Plugin, PositionType, Query, Res, Text, TextColor, TextFont, TextLayout, TextUiWriter, Transform, Update, Val, With};
 use bevy::text::JustifyText::{Left, Right};
 use bevy::text::TextSpan;
 use bevy::ui::AlignItems::Start;
 use bevy::ui::Val::Px;
 use bevy::ui::{BackgroundColor, UiRect};
 use bevy::utils::default;
-use crate::prelude::GameSystems::Ui;
+use crate::prelude::GameState::Rendering;
 
 pub struct HUDPlugin;
 
@@ -32,7 +31,7 @@ struct HudCurrencyText;
 
 impl Plugin for HUDPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(OnEnter(Playing), init_hud)
+        app.add_systems(OnEnter(Rendering), init_hud)
             .add_systems(Update, update_hud.in_set(Ui));
     }
 }
