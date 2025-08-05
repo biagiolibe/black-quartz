@@ -271,6 +271,7 @@ fn update_player_on_state_changes(
     mut query: Query<(&DrillState, &mut Damping, &mut Sprite), (With<Player>, Changed<DrillState>)>,
 ) {
     if let Ok((state, mut damping, mut sprite)) = query.get_single_mut() {
+        info!("update_player_on_state_changes {:?}", state);
         if *state == Idle {
             damping.linear_damping = 10.0;
         } else {
@@ -420,7 +421,8 @@ fn falling_detection(
             },
             QueryFilter::default(),
         ) {
-            if toi.time_of_impact > 1.0 && velocity.linvel.y < -1.0 {
+            if toi.time_of_impact > 10.0 && velocity.linvel.y < -1.0 {
+                info!("Falling");
                 *drill_state = Falling;
             }
         }

@@ -19,8 +19,8 @@ pub struct DrillAnimation {
 impl Default for DrillAnimation {
     fn default() -> Self {
         Self {
-            drilling_bob_amplitude: 0.5,  // pixel di movimento
-            drilling_bob_frequency: 60.0, // oscillazioni per secondo
+            drilling_bob_amplitude: 1.0,  // pixel di movimento
+            drilling_bob_frequency: 70.0, // oscillazioni per secondo
         }
     }
 }
@@ -33,8 +33,8 @@ struct DrillShake {
 impl Default for DrillShake {
     fn default() -> Self {
         Self {
-            intensity: 0.5,
-            frequency: 50.0,
+            intensity: 1.0,
+            frequency: 70.0,
             timer: 0.0,
         }
     }
