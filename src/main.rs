@@ -6,6 +6,7 @@ mod menu;
 mod player;
 mod camera;
 mod world_base;
+mod drill_animation;
 
 mod prelude {
     pub use crate::camera::*;
@@ -16,6 +17,7 @@ mod prelude {
     pub use crate::player::*;
     pub use crate::resource::*;
     pub use crate::world_base::*;
+    pub use crate::drill_animation::*;
 }
 
 use crate::prelude::GamePlugin;

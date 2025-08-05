@@ -1,10 +1,13 @@
+use crate::prelude::DrillAnimation;
 use crate::map::TileType::Empty;
 use crate::map::{TILE_SIZE, Tile, WorldGrid};
 use crate::menu::MenuState;
 use crate::player::DrillState::{Drilling, Falling, Flying, Idle};
 use crate::prelude::GameSystems::{Rendering, Running};
 use crate::prelude::MenuState::GameOver;
-use crate::prelude::{GameAssets, GameState, world_grid_position_to_idx, world_to_grid_position, LoadingProgress};
+use crate::prelude::{
+    GameAssets, GameState, LoadingProgress, world_grid_position_to_idx, world_to_grid_position,
+};
 use bevy::prelude::*;
 use bevy_rapier2d::prelude::{
     ActiveEvents, Collider, CollisionEvent, Damping, GravityScale, LockedAxes, QueryFilter,
@@ -17,20 +20,22 @@ pub struct PlayerPlugin;
 /// This plugin handles player-related stuff like movement
 impl Plugin for PlayerPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(OnEnter(GameState::Rendering), spawn_player.in_set(Rendering))
-            .add_systems(
-                Update,
-                (
-                    update_player_on_state_changes.in_set(Running),
-                    (move_player, drill)
-                        .in_set(Running),
-                    falling_detection.in_set(Running),
-                    collision_detection.in_set(Running),
-                    death_detection.in_set(Running),
-                )
-                    .run_if(in_state(GameState::Playing))
-                    .chain(),
-            );
+        app.add_systems(
+            OnEnter(GameState::Rendering),
+            spawn_player.in_set(Rendering),
+        )
+        .add_systems(
+            Update,
+            (
+                update_player_on_state_changes.in_set(Running),
+                (move_player, drill).in_set(Running),
+                falling_detection.in_set(Running),
+                collision_detection.in_set(Running),
+                death_detection.in_set(Running),
+            )
+                .run_if(in_state(GameState::Playing))
+                .chain(),
+        );
     }
 }
 
@@ -42,7 +47,8 @@ impl Plugin for PlayerPlugin {
     FieldOfView,
     DrillState,
     PlayerAttributes,
-    Currency
+    Currency,
+    DrillAnimation
 )]
 pub struct Player;
 
@@ -194,8 +200,11 @@ impl Currency {
     }
 }
 
-pub fn spawn_player(mut commands: Commands, game_assets: Res<GameAssets>,
-mut loading_progress: ResMut<LoadingProgress>) {
+pub fn spawn_player(
+    mut commands: Commands,
+    game_assets: Res<GameAssets>,
+    mut loading_progress: ResMut<LoadingProgress>,
+) {
     info!("spawning player");
     // Drilling Machine (Player)
     commands
@@ -304,6 +313,9 @@ fn drill(
             KeyCode::ArrowDown => Some((0, -1)),
             _ => None,
         });
+        if *drill_state == Drilling && direction == None {
+            *drill_state = Idle;
+        }
         if *drill_state != Idle && *drill_state != Drilling {
             direction = None;
         }
@@ -371,7 +383,7 @@ fn collision_detection(
                 let grid_tile_pos = world_to_grid_position(tile_transform.translation.truncate());
                 let grid_player_pos = world_to_grid_position(player_pos.translation.truncate());
 
-                if grid_tile_pos.0 == grid_player_pos.0 {
+                if grid_tile_pos.0 == grid_player_pos.0 && *drill_state != Drilling {
                     // collision from bottom
                     *drill_state = Idle;
                     let impact_speed = velocity.linvel.y.abs();

@@ -63,7 +63,6 @@ fn base_access(
     for event in collision_events.read() {
         match event {
             CollisionEvent::Started(collider1, collider2, _) => {
-                info!("collision started {:?}", event);
                 if (player.get(*collider1).is_ok() && world_base.get(*collider2).is_ok())
                     || (player.get(*collider2).is_ok() && world_base.get(*collider1).is_ok())
                 {
