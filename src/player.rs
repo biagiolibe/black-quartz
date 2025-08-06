@@ -422,7 +422,6 @@ fn falling_detection(
             QueryFilter::default(),
         ) {
             if toi.time_of_impact > 10.0 && velocity.linvel.y < -1.0 {
-                info!("Falling");
                 *drill_state = Falling;
             }
         }

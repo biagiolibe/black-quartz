@@ -1,7 +1,7 @@
 use crate::BlackQuartzCamera;
 use crate::game::GameState::Playing;
 use crate::map::WorldGrid;
-use crate::prelude::{LoadingProgress, Player, move_player};
+use crate::prelude::{LoadingProgress, Player, move_player, DrillState};
 use bevy::math::Vec2;
 use bevy::prelude::{
     App, Camera2d, Commands, IntoSystemConfigs, OrthographicProjection, Plugin, Query, Res, ResMut,
@@ -36,7 +36,7 @@ fn setup_camera(mut commands: Commands, mut loading_progress: ResMut<LoadingProg
 }
 
 fn follow_player(
-    query_player: Query<&Transform, With<Player>>,
+    query_player: Query<(&Transform, &DrillState), With<Player>>,
     mut query_camera: Query<
         (&mut Transform, &OrthographicProjection),
         (With<BlackQuartzCamera>, Without<Player>),
@@ -44,7 +44,10 @@ fn follow_player(
     world_grid: Res<WorldGrid>,
 ) {
     // Camera handling
-    if let Ok(player_transform) = query_player.get_single() {
+    if let Ok((player_transform, drill_state)) = query_player.get_single() {
+        if matches!(drill_state, DrillState::Drilling) {
+           return; 
+        }
         let player_pos = player_transform.translation;
         let (mut camera_pos, camera) = query_camera.single_mut();
         let camera_area = &camera.area;
