@@ -13,6 +13,7 @@ pub enum GameSystems {
     Physics,
     Camera,
     Collision,
+    Animation,
     Ui
 }
 #[derive(States, Default, Clone, Eq, PartialEq, Debug, Hash)]
@@ -65,6 +66,7 @@ impl Plugin for GamePlugin {
                     GameSystems::Camera,
                     GameSystems::Physics,
                     GameSystems::Collision,
+                    GameSystems::Animation,
                     GameSystems::Ui
                 )
                     .chain(),

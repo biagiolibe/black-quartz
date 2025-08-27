@@ -1,12 +1,12 @@
-use crate::prelude::DrillAnimation;
 use crate::map::TileType::Empty;
-use crate::map::{TILE_SIZE, Tile, WorldGrid};
+use crate::map::{Tile, WorldGrid, TILE_SIZE};
 use crate::menu::MenuState;
 use crate::player::DrillState::{Drilling, Falling, Flying, Idle};
+use crate::prelude::DrillAnimation;
 use crate::prelude::GameSystems::{Rendering, Running};
 use crate::prelude::MenuState::GameOver;
 use crate::prelude::{
-    GameAssets, GameState, LoadingProgress, world_grid_position_to_idx, world_to_grid_position,
+    world_grid_position_to_idx, world_to_grid_position, GameAssets, GameState, LoadingProgress,
 };
 use bevy::prelude::*;
 use bevy_rapier2d::prelude::{
@@ -325,6 +325,9 @@ fn drill(
 
             if let Some(entity) = world_grid.grid.get(&target_index) {
                 if let Ok((mut tile, _)) = query_tile.get_mut(*entity) {
+                    //Update drilling state
+                    *drill_state = Drilling;
+
                     tile.drilling.integrity -=
                         attributes.drill_power * time.delta_secs() * (1.0 - tile.drilling.hardness);
                     if tile.drilling.integrity <= 0.0 {
@@ -337,9 +340,9 @@ fn drill(
                         if let Some(item) = tile.tile_type.to_item() {
                             inventory.add_item(item);
                         }
+                        //Update drilling state
+                        *drill_state = Idle;
                     }
-                    //Update drilling state
-                    *drill_state = Drilling;
                 } else {
                     warn!(
                         "No tile exists to be drilled on position {:?}",
