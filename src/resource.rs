@@ -79,7 +79,7 @@ pub fn load_assets(
 }
 
 pub fn check_loading_progress(
-    loading_progress: ResMut<LoadingProgress>,
+    loading_progress: Res<LoadingProgress>,
     mut next_state: ResMut<NextState<GameState>>,
 ) {
     if loading_progress.loading_assets

@@ -331,7 +331,7 @@ pub fn update_fov(
                 continue;
             }
             if visited.contains(&pos) && player_pos != pos {
-                //info!("tile already visited {:?}", pos);
+                // Tile already visited
                 continue;
             }
             // Add position to list of visited

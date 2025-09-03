@@ -1,12 +1,12 @@
 use crate::map::TileType::Empty;
-use crate::map::{Tile, WorldGrid, TILE_SIZE};
+use crate::map::{TILE_SIZE, Tile, WorldGrid};
 use crate::menu::MenuState;
 use crate::player::DrillState::{Drilling, Falling, Flying, Idle};
 use crate::prelude::DrillAnimation;
 use crate::prelude::GameSystems::{Rendering, Running};
 use crate::prelude::MenuState::GameOver;
 use crate::prelude::{
-    world_grid_position_to_idx, world_to_grid_position, GameAssets, GameState, LoadingProgress,
+    GameAssets, GameState, LoadingProgress, world_grid_position_to_idx, world_to_grid_position,
 };
 use bevy::prelude::*;
 use bevy_rapier2d::prelude::{
@@ -201,12 +201,15 @@ impl Currency {
 }
 
 pub fn spawn_player(
+    player: Query<Entity, With<Player>>,
     mut commands: Commands,
     game_assets: Res<GameAssets>,
     mut loading_progress: ResMut<LoadingProgress>,
 ) {
-    info!("spawning player");
-    // Drilling Machine (Player)
+    if let Ok(entity) = player.get_single() {
+        commands.entity(entity).despawn();
+    }
+    info!("Spawning Drilling Machine (Player)");
     commands
         .spawn((
             Player,

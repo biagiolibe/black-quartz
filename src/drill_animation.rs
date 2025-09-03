@@ -3,9 +3,8 @@ use crate::prelude::*;
 use bevy::app::App;
 use bevy::math::VectorSpace;
 use bevy::prelude::{
-    Component, IntoSystemConfigs, Plugin, Query, Res, Time, Transform, Update, Vec3, With, info,
+    Component, IntoSystemConfigs, Plugin, Query, Res, Time, Transform, Update, Vec3, With,
 };
-use bevy::reflect::impl_from_reflect_opaque;
 
 pub struct DrillAnimationPlugin;
 

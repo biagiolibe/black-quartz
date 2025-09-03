@@ -244,6 +244,7 @@ fn handle_button_interaction(
     mut player: Query<(&mut Inventory, &mut Fuel, &mut Currency), With<Player>>,
     mut next_state: ResMut<NextState<GameState>>,
     economy: Res<EconomyConfig>,
+    mut loading_progress: ResMut<LoadingProgress>,
     mut next_menu_state: ResMut<NextState<MenuState>>,
 ) {
     for (interaction, button) in interaction.iter() {
@@ -264,6 +265,10 @@ fn handle_button_interaction(
                     next_menu_state.set(MenuState::None);
                 }
                 Resume => {
+                    loading_progress.spawning_base = false;
+                    loading_progress.rendering_map = false;
+                    loading_progress.spawning_player = false;
+                    loading_progress.init_camera = false;
                     next_state.set(GameState::Playing);
                     next_menu_state.set(MenuState::None);
                 }
