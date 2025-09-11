@@ -28,6 +28,7 @@ impl Plugin for PlayerPlugin {
             Update,
             (
                 update_player_on_state_changes.in_set(Running),
+                update_player_direction.in_set(Running),
                 (move_player, drill).in_set(Running),
                 falling_detection.in_set(Running),
                 collision_detection.in_set(Running),
@@ -48,7 +49,8 @@ impl Plugin for PlayerPlugin {
     DrillState,
     PlayerAttributes,
     Currency,
-    DrillAnimation
+    DrillAnimation,
+    PlayerDirection
 )]
 pub struct Player;
 
@@ -72,6 +74,18 @@ impl Default for PlayerAttributes {
             flying_speed_factor: 200.0,
             fuel_efficiency: 0.3,
         }
+    }
+}
+
+#[derive(Component, Clone, Copy, PartialEq)]
+pub enum PlayerDirection {
+    Left,
+    Right,
+}
+
+impl Default for PlayerDirection {
+    fn default() -> Self {
+        PlayerDirection::Right
     }
 }
 
@@ -112,10 +126,10 @@ pub enum DrillState {
     Falling,
 }
 
-#[derive(Component, Clone, PartialEq)]
+#[derive(Component, Clone, PartialEq, Debug)]
 pub struct FieldOfView {
     pub visible_tiles: HashSet<(i32, i32)>,
-    pub(crate) radius: i32,
+    pub radius: i32,
     pub dirty: bool,
 }
 impl Default for FieldOfView {
@@ -207,7 +221,7 @@ pub fn spawn_player(
     mut loading_progress: ResMut<LoadingProgress>,
 ) {
     if let Ok(entity) = player.get_single() {
-        commands.entity(entity).despawn();
+        commands.entity(entity).despawn_recursive();
     }
     info!("Spawning Drilling Machine (Player)");
     commands
@@ -221,7 +235,7 @@ pub fn spawn_player(
                 image: game_assets.player.texture.clone(),
                 texture_atlas: Some(TextureAtlas {
                     layout: game_assets.player.texture_layout.clone(),
-                    index: 2,
+                    index: 0,
                 }),
                 custom_size: Some(Vec2::new(TILE_SIZE, TILE_SIZE)),
                 ..default()
@@ -257,6 +271,7 @@ pub fn move_player(
                 }
                 direction
             });
+        info!("move_player with velocity {:?}", velocity);
         if direction != Vec2::ZERO {
             if direction.x != 0.0 {
                 velocity.linvel.x = direction.x * attributes.ground_speed_factor;
@@ -274,7 +289,10 @@ fn update_player_on_state_changes(
     mut query: Query<(&DrillState, &mut Damping, &mut Sprite), (With<Player>, Changed<DrillState>)>,
 ) {
     if let Ok((state, mut damping, mut sprite)) = query.get_single_mut() {
-        info!("update_player_on_state_changes {:?}", state);
+        info!(
+            "update_player_on_state_changes {{ DrillState: {:?}, Damping: {:?} }} ",
+            state, damping
+        );
         if *state == Idle {
             damping.linear_damping = 10.0;
         } else {
@@ -282,12 +300,34 @@ fn update_player_on_state_changes(
         }
         if let Some(texture_sprite) = &mut sprite.texture_atlas {
             match state {
-                Idle => texture_sprite.index = 2,
-                Flying => texture_sprite.index = 3,
-                Falling => texture_sprite.index = 1,
-                Drilling => texture_sprite.index = 0,
+                Idle | Falling => texture_sprite.index = 0,
+                Flying => texture_sprite.index = 1,
+                Drilling => texture_sprite.index = 2,
             };
         };
+    }
+}
+
+// Sistema per gestire il flip del player basato sulla direzione del movimento
+fn update_player_direction(
+    keyboard_input: Res<ButtonInput<KeyCode>>,
+    mut player_query: Query<(&mut Transform, &mut PlayerDirection, &mut Sprite), With<Player>>,
+) {
+    if let Ok((mut transform, mut direction, mut sprite)) = player_query.get_single_mut() {
+        // Controlla input orizzontale
+        if keyboard_input.pressed(KeyCode::ArrowLeft) {
+            if *direction != PlayerDirection::Left {
+                *direction = PlayerDirection::Left;
+                // Capovolgimento orizzontale - scala X negativa
+                sprite.flip_x = true;
+            }
+        } else if keyboard_input.pressed(KeyCode::ArrowRight) {
+            if *direction != PlayerDirection::Right {
+                *direction = PlayerDirection::Right;
+                // Direzione normale - scala X positiva
+                sprite.flip_x = false;
+            }
+        }
     }
 }
 

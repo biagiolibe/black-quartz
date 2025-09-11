@@ -9,6 +9,7 @@ use bevy_rapier2d::prelude::{ActiveEvents, Collider, RigidBody};
 use noise::{NoiseFn, Perlin};
 use rand::Rng;
 use std::collections::{HashMap, HashSet, VecDeque};
+use bevy::utils::info;
 
 pub const TILE_SIZE: f32 = 32.0;
 pub const GRID_WIDTH: isize = 100;
@@ -294,6 +295,7 @@ fn update_fov_overlay(
     mut world_grid: ResMut<WorldGrid>,
 ) {
     if let Ok(mut fov) = fov_query.get_single_mut() {
+        info!("update_fov_overlay {:?}", fov);
         if fov.dirty {
             fov.visible_tiles.iter().for_each(|(x, y)| {
                 if !world_grid.revealed_tiles.contains(&(*x, *y)) {

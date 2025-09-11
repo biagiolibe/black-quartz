@@ -48,9 +48,9 @@ pub fn load_assets(
 
     //Player assets
     let player_texture_handle: Handle<Image> =
-        asset_server.load("textures/drilling_machine_full.png");
+        asset_server.load("textures/drilling.png");
     let player_texture_layout =
-        TextureAtlasLayout::from_grid(UVec2::new(350, 383), 2, 4, None, None);
+        TextureAtlasLayout::from_grid(UVec2::new(750, 830), 2, 3, None, None);
     let player_layout_handle = texture_atlas_layouts.add(player_texture_layout);
 
     //Buildings assets
