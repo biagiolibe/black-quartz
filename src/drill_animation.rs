@@ -38,24 +38,14 @@ impl Default for DrillAnimation {
 struct DrillShake {
     intensity: f32,
     frequency: f32,
-    shake_pattern: ShakePattern,
 }
 impl Default for DrillShake {
     fn default() -> Self {
         Self {
             intensity: 0.5,
-            frequency: 60.0,
-            shake_pattern: ShakePattern::Circular,
+            frequency: 60.0
         }
     }
-}
-
-#[derive(Clone, Copy)]
-enum ShakePattern {
-    Uniform,    // Shake uniforme in tutte le direzioni
-    Horizontal, // Solo orizzontale
-    Vertical,   // Solo verticale
-    Circular,   // Movimento circolare
 }
 
 fn animate_drilling(
@@ -113,7 +103,7 @@ fn animate_drilling(
             }
             DrillState::Idle => {
                 // Ritorna alla posizione base e resetta il timer
-                if let Some(base_pos) = drill_animation.base_position {
+                if drill_animation.base_position.is_some() {
                     drill_animation.base_position = None;
                     drill_animation.internal_timer = 0.0;
                 }
