@@ -5,11 +5,11 @@ use crate::prelude::TileType::*;
 use crate::prelude::{FieldOfView, GameState, Item, LoadingProgress, Player};
 use crate::resource::GameAssets;
 use bevy::prelude::*;
+use bevy::utils::info;
 use bevy_rapier2d::prelude::{ActiveEvents, Collider, RigidBody};
 use noise::{NoiseFn, Perlin};
 use rand::Rng;
 use std::collections::{HashMap, HashSet, VecDeque};
-use bevy::utils::info;
 
 pub const TILE_SIZE: f32 = 32.0;
 pub const GRID_WIDTH: isize = 100;
@@ -242,8 +242,14 @@ fn count_solid_neighbors(tiles: &Vec<Vec<TileType>>, x: usize, y: usize) -> usiz
 fn render_map(
     mut commands: Commands,
     game_assets: Res<GameAssets>,
+    tile_query: Query<Entity, With<Tile>>,
     mut world_grid: ResMut<WorldGrid>,
 ) {
+    //Clear world map from previous run, if any
+    for tile_entity in tile_query.iter() {
+        commands.entity(tile_entity).despawn_recursive();
+    }
+
     for x in -GRID_WIDTH / 2..GRID_WIDTH / 2 {
         for y in -GRID_HEIGHT..0 {
             let tile_type =
@@ -295,12 +301,12 @@ fn update_fov_overlay(
     mut world_grid: ResMut<WorldGrid>,
 ) {
     if let Ok(mut fov) = fov_query.get_single_mut() {
-        info!("update_fov_overlay {:?}", fov);
         if fov.dirty {
             fov.visible_tiles.iter().for_each(|(x, y)| {
                 if !world_grid.revealed_tiles.contains(&(*x, *y)) {
                     if let Some(entity) = world_grid.grid.get(&(*x, *y)) {
                         let (mut sprite, tile) = query_tiles.get_mut(*entity).unwrap();
+                        info!("Foving {}x{}", x, y);
                         match tile.tile_type {
                             Empty => sprite.color = Color::NONE,
                             _ => sprite.color = Color::WHITE,
@@ -314,7 +320,6 @@ fn update_fov_overlay(
     }
 }
 
-//TODO improve in some way
 pub fn update_fov(
     mut player_query: Query<(&Transform, Mut<FieldOfView>), With<Player>>,
     world_grid: ResMut<WorldGrid>,

@@ -1,3 +1,4 @@
+use std::ops::Mul;
 use crate::game::GameState;
 use crate::game::GameSystems::Running;
 use crate::map::TILE_SIZE;
@@ -36,10 +37,10 @@ fn spawn_base(
                     layout: game_assets.buildings.texture_layout.clone(),
                     index: 0,
                 }),
-                custom_size: Some(Vec2::splat(base_size)),
+                custom_size: Some(Vec2::new(base_size,base_size-TILE_SIZE.mul(2.0))),
                 ..default()
             },
-            Transform::from_xyz(-base_size, (base_size / 2.0) - TILE_SIZE, -1.0),
+            Transform::from_xyz(-base_size, (base_size/ 3.0) - TILE_SIZE+7.0, -1.0),
             ActiveEvents::COLLISION_EVENTS,
         ))
         .with_children(|parent| {

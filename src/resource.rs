@@ -56,7 +56,7 @@ pub fn load_assets(
     //Buildings assets
     let buildings_texture_handle: Handle<Image> = asset_server.load("textures/buildings.png");
     let buildings_texture_layout =
-        TextureAtlasLayout::from_grid(UVec2::new(1024, 1024), 1, 1, None, None);
+        TextureAtlasLayout::from_grid(UVec2::new(911, 727), 1, 1, None, None);
     let buildings_layout_handle = texture_atlas_layouts.add(buildings_texture_layout);
 
     commands.insert_resource(GameAssets {

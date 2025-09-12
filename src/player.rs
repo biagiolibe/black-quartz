@@ -97,8 +97,8 @@ pub struct Health {
 impl Default for Health {
     fn default() -> Self {
         Self {
-            current: 100.0,
-            max: 100.0,
+            current: 10.0,
+            max: 10.0,
         }
     }
 }
@@ -271,7 +271,6 @@ pub fn move_player(
                 }
                 direction
             });
-        info!("move_player with velocity {:?}", velocity);
         if direction != Vec2::ZERO {
             if direction.x != 0.0 {
                 velocity.linvel.x = direction.x * attributes.ground_speed_factor;

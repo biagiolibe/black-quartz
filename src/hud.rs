@@ -1,7 +1,7 @@
 use crate::player::Player;
 use crate::prelude::GameSystems::Ui;
 use crate::prelude::{world_to_grid_position, Currency, Fuel, Health, Inventory};
-use bevy::prelude::{info, App, AssetServer, BuildChildren, ChildBuild, Color, Commands, Component, Entity, FlexDirection, IntoSystemConfigs, JustifyContent, Node, OnEnter, Plugin, PositionType, Query, Res, Text, TextColor, TextFont, TextLayout, TextUiWriter, Transform, Update, Val, With};
+use bevy::prelude::{info, App, AssetServer, BuildChildren, ChildBuild, Color, Commands, Component, DespawnRecursiveExt, Entity, FlexDirection, IntoSystemConfigs, JustifyContent, Node, OnEnter, Plugin, PositionType, Query, Res, Text, TextColor, TextFont, TextLayout, TextUiWriter, Transform, Update, Val, With};
 use bevy::text::JustifyText::{Left, Right};
 use bevy::text::TextSpan;
 use bevy::ui::AlignItems::Start;
@@ -36,7 +36,8 @@ impl Plugin for HUDPlugin {
     }
 }
 
-fn init_hud(mut commands: Commands, assets_server: Res<AssetServer>) {
+fn init_hud(mut commands: Commands, assets_server: Res<AssetServer>,
+hud_query: Query<Entity, With<Hud>>,) {
     let font = assets_server.load("fonts/FiraSans-Regular.ttf");
 
     let font_style = TextFont {
@@ -44,6 +45,10 @@ fn init_hud(mut commands: Commands, assets_server: Res<AssetServer>) {
         font_size: 20.0,
         ..Default::default()
     };
+    //Clear previous hud statistics, if any
+    for entity in hud_query.iter() {
+        commands.entity(entity).despawn_recursive();
+    }
     commands
         .spawn((
             Hud,
