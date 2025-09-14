@@ -81,7 +81,7 @@ impl Plugin for GamePlugin {
             .add_plugins(WorldBasePlugin)
             .add_plugins(PlayerPlugin)
             .add_plugins(HUDPlugin)
-            .add_plugins(DrillAnimationPlugin)
+            .add_plugins(AnimationPlugin)
             .add_systems(OnEnter(GameState::GameOver), exit_game);
         /*
                #[cfg(debug_assertions)]
