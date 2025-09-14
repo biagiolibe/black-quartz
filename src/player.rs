@@ -1,8 +1,9 @@
+use crate::BlackQuartzCamera;
 use crate::map::TileType::Empty;
 use crate::map::{TILE_SIZE, Tile, WorldGrid};
 use crate::menu::MenuState;
 use crate::player::DrillState::{Drilling, Falling, Flying, Idle};
-use crate::prelude::DrillAnimation;
+use crate::prelude::{CameraShake, DrillAnimation};
 use crate::prelude::GameSystems::{Rendering, Running};
 use crate::prelude::MenuState::GameOver;
 use crate::prelude::{
@@ -14,6 +15,7 @@ use bevy_rapier2d::prelude::{
     ReadRapierContext, RigidBody, ShapeCastOptions, Velocity,
 };
 use std::collections::{HashSet, VecDeque};
+use std::time::Duration;
 
 pub struct PlayerPlugin;
 
@@ -97,8 +99,8 @@ pub struct Health {
 impl Default for Health {
     fn default() -> Self {
         Self {
-            current: 10.0,
-            max: 10.0,
+            current: 100.0,
+            max: 100.0,
         }
     }
 }
@@ -288,7 +290,7 @@ fn update_player_on_state_changes(
     mut query: Query<(&DrillState, &mut Damping, &mut Sprite), (With<Player>, Changed<DrillState>)>,
 ) {
     if let Ok((state, mut damping, mut sprite)) = query.get_single_mut() {
-        info!(
+        debug!(
             "update_player_on_state_changes {{ DrillState: {:?}, Damping: {:?} }} ",
             state, damping
         );
@@ -397,6 +399,7 @@ fn drill(
 }
 
 fn collision_detection(
+    mut commands: Commands,
     mut collision_events: EventReader<CollisionEvent>,
     mut player: Query<
         (
@@ -409,6 +412,7 @@ fn collision_detection(
         With<Player>,
     >,
     tiles: Query<&Transform, With<Tile>>,
+    mut camera: Query<Entity, With<BlackQuartzCamera>>,
 ) {
     for event in collision_events.read() {
         match event {
@@ -440,6 +444,13 @@ fn collision_detection(
                             "Player collision detected, impact speed {:?}, damage {:?}, player integrity {:?}",
                             impact_speed, damage_amount, health.current
                         );
+                        for (entity) in camera.iter_mut() {
+                            commands.entity(entity).insert(CameraShake {
+                                base_position: None,
+                                timer: Timer::new(Duration::from_secs_f32(0.1), TimerMode::Once),
+                                intensity: 3.0, // Intensità pixel del tremolio
+                            });
+                        }
                     }
                 }
             }

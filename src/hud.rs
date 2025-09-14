@@ -1,14 +1,23 @@
+use crate::map::TILE_SIZE;
 use crate::player::Player;
+use crate::prelude::GameState::Rendering;
 use crate::prelude::GameSystems::Ui;
-use crate::prelude::{world_to_grid_position, Currency, Fuel, Health, Inventory};
-use bevy::prelude::{info, App, AssetServer, BuildChildren, ChildBuild, Color, Commands, Component, DespawnRecursiveExt, Entity, FlexDirection, IntoSystemConfigs, JustifyContent, Node, OnEnter, Plugin, PositionType, Query, Res, Text, TextColor, TextFont, TextLayout, TextUiWriter, Transform, Update, Val, With};
+use crate::prelude::{Currency, Fuel, GameAssets, Health, Inventory, world_to_grid_position};
+use bevy::math::Vec2;
+use bevy::prelude::{
+    App, AssetServer, BuildChildren, ChildBuild, Color, Commands, Component, DespawnRecursiveExt,
+    Entity, FlexDirection, Image, ImageBundle, ImageNode, IntoSystemConfigs, JustifyContent, Node,
+    OnEnter, Plugin, PositionType, Query, Res, Sprite, Text, TextColor, TextFont, TextLayout,
+    TextUiWriter, TextureAtlas, Transform, Update, Val, With, info,
+};
 use bevy::text::JustifyText::{Left, Right};
 use bevy::text::TextSpan;
 use bevy::ui::AlignItems::Start;
 use bevy::ui::Val::Px;
+use bevy::ui::widget::NodeImageMode::Stretch;
 use bevy::ui::{BackgroundColor, UiRect};
+use bevy::ui::widget::NodeImageMode;
 use bevy::utils::default;
-use crate::prelude::GameState::Rendering;
 
 pub struct HUDPlugin;
 
@@ -36,8 +45,12 @@ impl Plugin for HUDPlugin {
     }
 }
 
-fn init_hud(mut commands: Commands, assets_server: Res<AssetServer>,
-hud_query: Query<Entity, With<Hud>>,) {
+fn init_hud(
+    mut commands: Commands,
+    assets_server: Res<AssetServer>,
+    game_assets: Res<GameAssets>,
+    hud_query: Query<Entity, With<Hud>>,
+) {
     let font = assets_server.load("fonts/FiraSans-Regular.ttf");
 
     let font_style = TextFont {
@@ -57,7 +70,7 @@ hud_query: Query<Entity, With<Hud>>,) {
                 width: Val::Percent(100.0),
                 height: Val::Percent(100.0),
                 align_items: Start,
-                flex_direction: FlexDirection::Column,
+                flex_direction: FlexDirection::Row,
                 position_type: PositionType::Absolute,
                 left: Px(10.0),
                 top: Px(10.0),
@@ -78,15 +91,22 @@ hud_query: Query<Entity, With<Hud>>,) {
                 ))
                 .with_child((TextSpan::default(), font_style.clone()));
             // Integrity stat
-            hud_children
-                .spawn((
-                    Text::new("Integrity: "),
-                    font_style.clone(),
-                    TextColor(Color::WHITE),
-                    TextLayout::new_with_justify(Left),
-                    HudIntegrityText,
-                ))
-                .with_child((TextSpan::default(), font_style.clone()));
+            hud_children.spawn((
+                ImageNode::from_atlas_image(
+                    game_assets.hud[0].texture.clone(),
+                    TextureAtlas {
+                        layout: game_assets.hud[0].texture_layout.clone(),
+                        index: 0,
+                    },
+                )
+                .with_mode(NodeImageMode::Auto),
+                Node{
+                    width: Val::Px(TILE_SIZE),
+                    height: Val::Px(TILE_SIZE),
+                    ..default()
+                },
+                HudIntegrityText,
+            ));
             // Depth stat
             hud_children
                 .spawn((
@@ -121,7 +141,7 @@ hud_query: Query<Entity, With<Hud>>,) {
 }
 
 fn update_hud(
-    hud_integrity_text: Query<Entity, With<HudIntegrityText>>,
+    mut hud_integrity: Query<(Entity, &mut Sprite), With<HudIntegrityText>>,
     hud_depth_text: Query<Entity, With<HudDepthText>>,
     hud_fuel_text: Query<Entity, With<HudFuelText>>,
     hud_inventory_text: Query<Entity, With<HudInventoryText>>,
@@ -135,10 +155,13 @@ fn update_hud(
             let currency_amount = player_stats.4.amount;
             *text_writer.text(currency_text_entity, 1) = format!("{}", currency_amount);
         }
-        if let Ok(integrity_text_entity) = hud_integrity_text.get_single() {
+        if let Ok((_, mut sprite)) = hud_integrity.get_single_mut() {
             let health = player_stats.0;
-            *text_writer.text(integrity_text_entity, 1) =
-                format!("{}/{}", health.current.trunc(), health.max);
+            let health_level_index = 10 - (health.current / 10.0).round() as usize;
+            if let Some(texture_atlas) = &mut sprite.texture_atlas {
+                info!("Health level index: {}", health_level_index);
+                texture_atlas.index = health_level_index;
+            };
         }
         if let Ok(depth_text_entity) = hud_depth_text.get_single() {
             let position = world_to_grid_position(player_stats.1.translation.truncate());

@@ -1,15 +1,18 @@
+use crate::BlackQuartzCamera;
 use crate::game::GameSystems::Animation;
 use crate::prelude::*;
 use bevy::app::App;
 use bevy::math::VectorSpace;
-use bevy::prelude::{info, Camera2d, Commands, Component, IntoSystemConfigs, Plugin, Query, Res, Time, Timer, Transform, Update, Vec3, With};
+use bevy::prelude::{Camera2d, Commands, Component, Entity, IntoSystemConfigs, Plugin, Query, Res, Time, Timer, Transform, Update, Vec3, With, info, debug};
+use bevy_rapier2d::parry::transformation::utils::transform;
 use rand::Rng;
 
-pub struct AnimationPlugin;
+pub struct GameAnimationPlugin;
 
-impl Plugin for AnimationPlugin {
+impl Plugin for GameAnimationPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(Update, (animate_drilling, animate_camera).in_set(Animation));
+        app.add_systems(Update, animate_drilling.in_set(Animation))
+            .add_systems(Update, animate_camera.in_set(Animation));
     }
 }
 
@@ -47,10 +50,11 @@ impl Default for DrillShake {
     }
 }
 
-#[derive(Component)]
-struct CameraShake {
-    intensity: f32,
-    timer: Timer,
+#[derive(Component, Debug, Clone)]
+pub struct CameraShake {
+    pub base_position: Option<Vec3>,
+    pub intensity: f32,
+    pub timer: Timer,
 }
 
 fn animate_drilling(
@@ -119,27 +123,34 @@ fn animate_drilling(
 }
 
 fn animate_camera(
-    commands: &mut Commands,
+    mut commands: Commands,
     time: Res<Time>,
-    mut camera_query: Query<(&Transform, Option<&mut CameraShake>), With<Camera2d>>,
+    mut camera_query: Query<
+        (Entity, &mut Transform, Option<&mut CameraShake>),
+        With<BlackQuartzCamera>,
+    >,
 ) {
-    info!("Camera animation");
     let mut rng = rand::thread_rng();
 
-    for (mut transform, mut shake_option) in &mut camera_query {
+    for (entity, mut transform, mut shake_option) in &mut camera_query {
         if let Some(shake) = shake_option.as_mut() {
+            // Salva la posizione base se non l'abbiamo ancora fatto
+            if shake.base_position.is_none() {
+                shake.base_position = Some(transform.translation);
+            }
+            debug!("Camera shake {:?}", shake);
             shake.timer.tick(time.delta());
             if shake.timer.finished() {
-                // Shake finito: resetta posizione (valutare posizione base camera se serve)
-                transform.translation.x = 0.0;
-                transform.translation.y = 0.0;
-                commands.entity(query.entity(&shake)).remove::<CameraShake>();
+                // Shake finito: resetta posizione
+                transform.translation.x = shake.base_position.unwrap().x;
+                transform.translation.y = shake.base_position.unwrap().y;
+                commands.entity(entity).remove::<CameraShake>();
             } else {
                 // Offset casuale nell'intervallo [-intensity, intensity]
                 let offset_x = rng.gen_range(-shake.intensity..shake.intensity);
                 let offset_y = rng.gen_range(-shake.intensity..shake.intensity);
-                transform.translation.x = offset_x;
-                transform.translation.y = offset_y;
+                transform.translation.x = transform.translation.x + offset_x;
+                transform.translation.y = transform.translation.y + offset_y;
             }
         }
     }

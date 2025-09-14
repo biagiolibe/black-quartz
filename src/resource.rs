@@ -26,6 +26,7 @@ pub struct GameAssets {
     pub buildings: AssetTexture,
     pub player: AssetTexture,
     pub terrain: AssetTexture,
+    pub hud: Vec<AssetTexture>,
 }
 
 pub struct AssetTexture {
@@ -47,8 +48,7 @@ pub fn load_assets(
     let terrain_layout_handle = texture_atlas_layouts.add(terrain_layout);
 
     //Player assets
-    let player_texture_handle: Handle<Image> =
-        asset_server.load("textures/drilling.png");
+    let player_texture_handle: Handle<Image> = asset_server.load("textures/drilling.png");
     let player_texture_layout =
         TextureAtlasLayout::from_grid(UVec2::new(750, 830), 2, 3, None, None);
     let player_layout_handle = texture_atlas_layouts.add(player_texture_layout);
@@ -58,6 +58,12 @@ pub fn load_assets(
     let buildings_texture_layout =
         TextureAtlasLayout::from_grid(UVec2::new(911, 727), 1, 1, None, None);
     let buildings_layout_handle = texture_atlas_layouts.add(buildings_texture_layout);
+
+    //HUD assets
+    let health_hud_texture_handle: Handle<Image> = asset_server.load("textures/health.png");
+    let health_hud_texture_layout =
+        TextureAtlasLayout::from_grid(UVec2::new(5781, 792), 11, 1, None, None);
+    let health_hud_layout_handle = texture_atlas_layouts.add(health_hud_texture_layout);
 
     commands.insert_resource(GameAssets {
         player: AssetTexture {
@@ -72,6 +78,10 @@ pub fn load_assets(
             texture: buildings_texture_handle,
             texture_layout: buildings_layout_handle,
         },
+        hud: vec![AssetTexture {
+            texture: health_hud_texture_handle,
+            texture_layout: health_hud_layout_handle,
+        }],
     });
     info!("Loading complete");
     loading_progress.loading_assets = true;
