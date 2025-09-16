@@ -1,4 +1,3 @@
-use std::ops::Mul;
 use crate::map::TILE_SIZE;
 use crate::player::Player;
 use crate::prelude::GameState::Rendering;
@@ -15,10 +14,11 @@ use bevy::text::JustifyText::{Left, Right};
 use bevy::text::TextSpan;
 use bevy::ui::AlignItems::Start;
 use bevy::ui::Val::Px;
+use bevy::ui::widget::NodeImageMode;
 use bevy::ui::widget::NodeImageMode::Stretch;
 use bevy::ui::{BackgroundColor, UiRect};
-use bevy::ui::widget::NodeImageMode;
 use bevy::utils::default;
+use std::ops::Mul;
 
 pub struct HUDPlugin;
 
@@ -26,7 +26,7 @@ pub struct HUDPlugin;
 struct Hud;
 
 #[derive(Component)]
-struct HudIntegrityText;
+struct HudIntegrity;
 
 #[derive(Component)]
 struct HudDepthText;
@@ -101,12 +101,12 @@ fn init_hud(
                     },
                 )
                 .with_mode(NodeImageMode::Auto),
-                Node{
+                Node {
                     width: Val::Px(TILE_SIZE.mul(1.5)),
                     height: Val::Px(TILE_SIZE.mul(2.0)),
                     ..default()
                 },
-                HudIntegrityText,
+                HudIntegrity,
             ));
             // Depth stat
             hud_children
@@ -142,7 +142,7 @@ fn init_hud(
 }
 
 fn update_hud(
-    mut hud_integrity: Query<(Entity, &mut ImageNode), With<HudIntegrityText>>,
+    mut hud_integrity: Query<(Entity, &mut ImageNode), With<HudIntegrity>>,
     hud_depth_text: Query<Entity, With<HudDepthText>>,
     hud_fuel_text: Query<Entity, With<HudFuelText>>,
     hud_inventory_text: Query<Entity, With<HudInventoryText>>,
@@ -158,20 +158,10 @@ fn update_hud(
         }
         if let Ok((_, mut image_node)) = hud_integrity.get_single_mut() {
             let health = player_stats.0;
+
+            // texture index on the base of health level
             let health_level_index = 10 - (health.current / 10.0).round() as usize;
-
-            // Calcola l'indice in base a salute (esempio lineare)
-            /*
-            let percent = (health.current / health.max).clamp(0.0, 1.0);
-            let index = ((10.0 * percent).round()) as usize; // oppure floor/ceil
-            if let Some(ref mut atlas) = image_node.texture_atlas {
-                atlas.index = index.min(10); // massimo frame: 10
-            }
-
-             */
-
             if let Some(texture_atlas) = &mut image_node.texture_atlas {
-                info!("Health level index: {}", health_level_index);
                 texture_atlas.index = health_level_index;
             };
         }
