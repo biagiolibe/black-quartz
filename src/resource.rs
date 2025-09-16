@@ -62,7 +62,7 @@ pub fn load_assets(
     //HUD assets
     let health_hud_texture_handle: Handle<Image> = asset_server.load("textures/health.png");
     let health_hud_texture_layout =
-        TextureAtlasLayout::from_grid(UVec2::new(5781, 792), 11, 1, None, None);
+        TextureAtlasLayout::from_grid(UVec2::new(525, 792), 11, 1, None, None);
     let health_hud_layout_handle = texture_atlas_layouts.add(health_hud_texture_layout);
 
     commands.insert_resource(GameAssets {

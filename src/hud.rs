@@ -1,3 +1,4 @@
+use std::ops::Mul;
 use crate::map::TILE_SIZE;
 use crate::player::Player;
 use crate::prelude::GameState::Rendering;
@@ -101,8 +102,8 @@ fn init_hud(
                 )
                 .with_mode(NodeImageMode::Auto),
                 Node{
-                    width: Val::Px(TILE_SIZE),
-                    height: Val::Px(TILE_SIZE),
+                    width: Val::Px(TILE_SIZE.mul(1.5)),
+                    height: Val::Px(TILE_SIZE.mul(2.0)),
                     ..default()
                 },
                 HudIntegrityText,
@@ -141,7 +142,7 @@ fn init_hud(
 }
 
 fn update_hud(
-    mut hud_integrity: Query<(Entity, &mut Sprite), With<HudIntegrityText>>,
+    mut hud_integrity: Query<(Entity, &mut ImageNode), With<HudIntegrityText>>,
     hud_depth_text: Query<Entity, With<HudDepthText>>,
     hud_fuel_text: Query<Entity, With<HudFuelText>>,
     hud_inventory_text: Query<Entity, With<HudInventoryText>>,
@@ -155,10 +156,21 @@ fn update_hud(
             let currency_amount = player_stats.4.amount;
             *text_writer.text(currency_text_entity, 1) = format!("{}", currency_amount);
         }
-        if let Ok((_, mut sprite)) = hud_integrity.get_single_mut() {
+        if let Ok((_, mut image_node)) = hud_integrity.get_single_mut() {
             let health = player_stats.0;
             let health_level_index = 10 - (health.current / 10.0).round() as usize;
-            if let Some(texture_atlas) = &mut sprite.texture_atlas {
+
+            // Calcola l'indice in base a salute (esempio lineare)
+            /*
+            let percent = (health.current / health.max).clamp(0.0, 1.0);
+            let index = ((10.0 * percent).round()) as usize; // oppure floor/ceil
+            if let Some(ref mut atlas) = image_node.texture_atlas {
+                atlas.index = index.min(10); // massimo frame: 10
+            }
+
+             */
+
+            if let Some(texture_atlas) = &mut image_node.texture_atlas {
                 info!("Health level index: {}", health_level_index);
                 texture_atlas.index = health_level_index;
             };
