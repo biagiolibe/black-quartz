@@ -2,9 +2,10 @@ use crate::BlackQuartzCamera;
 use crate::game::GameSystems::Animation;
 use crate::prelude::*;
 use bevy::app::App;
-use bevy::math::VectorSpace;
-use bevy::prelude::{Camera2d, Commands, Component, Entity, IntoSystemConfigs, Plugin, Query, Res, Time, Timer, Transform, Update, Vec3, With, info, debug};
-use bevy_rapier2d::parry::transformation::utils::transform;
+use bevy::prelude::{
+    Commands, Component, Entity, IntoScheduleConfigs, Plugin, Query, Res, Time, Timer, Transform,
+    Update, Vec3, With, debug, info,
+};
 use rand::Rng;
 
 pub struct GameAnimationPlugin;

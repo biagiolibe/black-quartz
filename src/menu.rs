@@ -32,34 +32,13 @@ impl Plugin for MenuPlugin {
                 .in_set(GameSystems::Rendering)
                 .chain(),
         )
-        .add_systems(
-            OnEnter(MenuState::WorldBase),
-            handle_base_menu,
-        )
-        .add_systems(
-            OnEnter(MenuState::GameOver),
-            handle_gameover_menu,
-        )
-        .add_systems(
-            OnEnter(MenuState::Inventory),
-            handle_inventory_menu,
-        )
-        .add_systems(
-            OnEnter(MenuState::Settings),
-            handle_settings_menu,
-        )
-        .add_systems(
-            Update,
-            handle_button_interaction.in_set(GameSystems::Ui),
-        )
-        .add_systems(
-            OnExit(GameState::Menu),
-            cleanup_menu,
-        )
-        .add_systems(
-            OnExit(GameState::MainMenu),
-            cleanup_menu,
-        );
+        .add_systems(OnEnter(MenuState::WorldBase), handle_base_menu)
+        .add_systems(OnEnter(MenuState::GameOver), handle_gameover_menu)
+        .add_systems(OnEnter(MenuState::Inventory), handle_inventory_menu)
+        .add_systems(OnEnter(MenuState::Settings), handle_settings_menu)
+        .add_systems(Update, handle_button_interaction.in_set(GameSystems::Ui))
+        .add_systems(OnExit(GameState::Menu), cleanup_menu)
+        .add_systems(OnExit(GameState::MainMenu), cleanup_menu);
     }
 }
 
@@ -122,17 +101,15 @@ pub fn init_menu(mut commands: Commands, assets_server: Res<AssetServer>) {
                     ));
 
                     popup
-                        .spawn((
-                            Node {
-                                width: Val::Percent(100.0),
-                                height: Val::Percent(60.0), // Occupa la parte centrale
-                                flex_direction: FlexDirection::Row,
-                                justify_content: JustifyContent::Start, // Allinea a sinistra
-                                align_items: AlignItems::Center,        // Centro verticalmente
-                                padding: UiRect::left(Val::Px(100.0)),  // Margine da sinistra
-                                ..default()
-                            },
-                        ))
+                        .spawn((Node {
+                            width: Val::Percent(100.0),
+                            height: Val::Percent(60.0), // Occupa la parte centrale
+                            flex_direction: FlexDirection::Row,
+                            justify_content: JustifyContent::Start, // Allinea a sinistra
+                            align_items: AlignItems::Center,        // Centro verticalmente
+                            padding: UiRect::left(Val::Px(100.0)),  // Margine da sinistra
+                            ..default()
+                        },))
                         .with_children(|popup| {
                             popup.spawn((Button, NewGame)).with_children(|button| {
                                 button.spawn((
@@ -372,8 +349,8 @@ fn set_visibility_recursive(
         .enumerate()
         .filter(|(index, _)| child_index.is_none_or(|idx| *index == idx))
         .for_each(|(id, entity)| {
-            if let Ok(mut visibility) = visibility_query.get_mut(*entity) {
-                    *visibility = visibility_target;
+            if let Ok(mut visibility) = visibility_query.get_mut(entity) {
+                *visibility = visibility_target;
             };
         });
 }

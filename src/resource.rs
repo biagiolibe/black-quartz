@@ -2,6 +2,8 @@ use crate::game::GameState::Playing;
 use crate::prelude::GameState::{Loading, MainMenu, Rendering};
 use crate::prelude::*;
 use bevy::prelude::*;
+use bevy::render::render_resource::{AsBindGroup, ShaderRef};
+use bevy::sprite::Material2d;
 
 #[derive(Resource, Default)]
 pub struct LoadingProgress {
@@ -32,6 +34,25 @@ pub struct GameAssets {
 pub struct AssetTexture {
     pub texture: Handle<Image>,
     pub texture_layout: Handle<TextureAtlasLayout>,
+}
+
+#[derive(AsBindGroup, Debug, Clone, Asset, TypePath, Component)]
+pub struct FovMaterial{
+    #[uniform(0)]
+    // campo dummy, ad esempio un float trasparenza, usato anche per default
+    pub alpha: f32,
+}
+
+impl Default for FovMaterial {
+    fn default() -> Self {
+        Self { alpha: 1.0 }
+    }
+}
+
+impl Material2d for FovMaterial {
+    fn fragment_shader() -> ShaderRef {
+        "shaders/fov_gradient.wgsl".into()
+    }
 }
 
 pub fn load_assets(

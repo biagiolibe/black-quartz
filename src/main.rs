@@ -1,14 +1,15 @@
+mod animation;
+mod camera;
 mod game;
 mod hud;
-mod resource;
 mod map;
 mod menu;
 mod player;
-mod camera;
+mod resource;
 mod world_base;
-mod animation;
 
 mod prelude {
+    pub use crate::animation::*;
     pub use crate::camera::*;
     pub use crate::game::*;
     pub use crate::hud::*;
@@ -17,7 +18,6 @@ mod prelude {
     pub use crate::player::*;
     pub use crate::resource::*;
     pub use crate::world_base::*;
-    pub use crate::animation::*;
 }
 
 use crate::prelude::GamePlugin;
@@ -30,19 +30,17 @@ struct BlackQuartzCamera;
 
 fn main() {
     App::new()
-        .add_plugins((
-            DefaultPlugins.set(WindowPlugin {
-                primary_window: Some(Window {
-                    title: "Black Quartz".to_string(),
-                    mode: WindowMode::Windowed,
-                    resizable: true,
-                    ..default()
-                }),
+        .add_plugins(DefaultPlugins.set(WindowPlugin {
+            primary_window: Some(Window {
+                title: "Black Quartz".to_string(),
+                mode: WindowMode::Windowed,
+                resizable: true,
                 ..default()
             }),
-            RapierPhysicsPlugin::<NoUserData>::pixels_per_meter(100.0),
-            //RapierDebugRenderPlugin::default(),
-        ))
+            ..default()
+        }))
+        .add_plugins(RapierPhysicsPlugin::<NoUserData>::pixels_per_meter(100.0))
+        //RapierDebugRenderPlugin::default(),
         .add_plugins(GamePlugin)
         .run();
 }

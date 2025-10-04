@@ -3,19 +3,16 @@ use crate::player::Player;
 use crate::prelude::GameState::Rendering;
 use crate::prelude::GameSystems::Ui;
 use crate::prelude::{Currency, Fuel, GameAssets, Health, Inventory, world_to_grid_position};
-use bevy::math::Vec2;
 use bevy::prelude::{
-    App, AssetServer, BuildChildren, ChildBuild, Color, Commands, Component, DespawnRecursiveExt,
-    Entity, FlexDirection, Image, ImageBundle, ImageNode, IntoSystemConfigs, JustifyContent, Node,
-    OnEnter, Plugin, PositionType, Query, Res, Sprite, Text, TextColor, TextFont, TextLayout,
-    TextUiWriter, TextureAtlas, Transform, Update, Val, With, info,
+    App, AssetServer, Color, Commands, Component, Entity, FlexDirection, ImageNode,
+    IntoScheduleConfigs, JustifyContent, Node, OnEnter, Plugin, PositionType, Query, Res, Text,
+    TextColor, TextFont, TextLayout, TextUiWriter, TextureAtlas, Transform, Update, Val, With,
 };
 use bevy::text::JustifyText::{Left, Right};
 use bevy::text::TextSpan;
 use bevy::ui::AlignItems::Start;
 use bevy::ui::Val::Px;
 use bevy::ui::widget::NodeImageMode;
-use bevy::ui::widget::NodeImageMode::Stretch;
 use bevy::ui::{BackgroundColor, UiRect};
 use bevy::utils::default;
 use std::ops::Mul;
@@ -61,7 +58,7 @@ fn init_hud(
     };
     //Clear previous hud statistics, if any
     for entity in hud_query.iter() {
-        commands.entity(entity).despawn_recursive();
+        commands.entity(entity).despawn();
     }
     commands
         .spawn((

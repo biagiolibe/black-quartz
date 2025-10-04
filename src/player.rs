@@ -3,9 +3,9 @@ use crate::map::TileType::Empty;
 use crate::map::{TILE_SIZE, Tile, WorldGrid};
 use crate::menu::MenuState;
 use crate::player::DrillState::{Drilling, Falling, Flying, Idle};
-use crate::prelude::{CameraShake, DrillAnimation};
 use crate::prelude::GameSystems::{Rendering, Running};
 use crate::prelude::MenuState::GameOver;
+use crate::prelude::{CameraShake, DrillAnimation};
 use crate::prelude::{
     GameAssets, GameState, LoadingProgress, world_grid_position_to_idx, world_to_grid_position,
 };
@@ -14,6 +14,7 @@ use bevy_rapier2d::prelude::{
     ActiveEvents, Collider, CollisionEvent, Damping, GravityScale, LockedAxes, QueryFilter,
     ReadRapierContext, RigidBody, ShapeCastOptions, Velocity,
 };
+use bevy_rapier2d::rapier::prelude::SharedShape;
 use std::collections::{HashSet, VecDeque};
 use std::time::Duration;
 
@@ -222,7 +223,7 @@ pub fn spawn_player(
     game_assets: Res<GameAssets>,
     mut loading_progress: ResMut<LoadingProgress>,
 ) {
-    if let Ok(entity) = player.get_single() {
+    if let Ok(entity) = player.single() {
         commands.entity(entity).despawn_recursive();
     }
     info!("Spawning Drilling Machine (Player)");
@@ -260,7 +261,7 @@ pub fn move_player(
         With<Player>,
     >,
 ) {
-    if let Ok((mut velocity, mut drill_state, attributes, mut fuel)) = query_player.get_single_mut()
+    if let Ok((mut velocity, mut drill_state, attributes, mut fuel)) = query_player.single_mut()
     {
         let direction = keyboard_input
             .get_pressed()
@@ -289,7 +290,7 @@ pub fn move_player(
 fn update_player_on_state_changes(
     mut query: Query<(&DrillState, &mut Damping, &mut Sprite), (With<Player>, Changed<DrillState>)>,
 ) {
-    if let Ok((state, mut damping, mut sprite)) = query.get_single_mut() {
+    if let Ok((state, mut damping, mut sprite)) = query.single_mut() {
         debug!(
             "update_player_on_state_changes {{ DrillState: {:?}, Damping: {:?} }} ",
             state, damping
@@ -314,7 +315,7 @@ fn update_player_direction(
     keyboard_input: Res<ButtonInput<KeyCode>>,
     mut player_query: Query<(&mut Transform, &mut PlayerDirection, &mut Sprite), With<Player>>,
 ) {
-    if let Ok((mut transform, mut direction, mut sprite)) = player_query.get_single_mut() {
+    if let Ok((mut transform, mut direction, mut sprite)) = player_query.single_mut() {
         // Controlla input orizzontale
         if keyboard_input.pressed(KeyCode::ArrowLeft) {
             if *direction != PlayerDirection::Left {
@@ -348,7 +349,7 @@ fn drill(
     mut world_grid: ResMut<WorldGrid>,
     mut query_tile: Query<(&mut Tile, &Transform), With<Tile>>,
 ) {
-    if let Ok((transform, mut inventory, mut drill_state, attributes)) = player.get_single_mut() {
+    if let Ok((transform, mut inventory, mut drill_state, attributes)) = player.single_mut() {
         let position = transform.translation.truncate();
         let current_position = world_to_grid_position(position);
 
@@ -463,22 +464,24 @@ fn falling_detection(
     mut player_query: Query<(&Velocity, &Transform, &mut DrillState), With<Player>>,
     read_rapier_context: ReadRapierContext,
 ) {
-    if let Ok((velocity, transform, mut drill_state)) = player_query.get_single_mut() {
+    if let Ok((velocity, transform, mut drill_state)) = player_query.single_mut() {
         let player_pos = transform.translation.truncate();
 
-        if let Some((_, toi)) = read_rapier_context.single().cast_shape(
-            player_pos,
-            0.0,
-            Vec2::NEG_Y,
-            &Collider::cuboid(8.0, 16.0), // A little rectangle under the player
-            ShapeCastOptions {
-                stop_at_penetration: false,
-                ..default()
-            },
-            QueryFilter::default(),
-        ) {
-            if toi.time_of_impact > 10.0 && velocity.linvel.y < -1.0 {
-                *drill_state = Falling;
+        if let Ok(context) = read_rapier_context.single() {
+            if let Some((_, toi)) = context.cast_shape(
+                player_pos,
+                0.0,
+                Vec2::NEG_Y,
+                &*SharedShape::cuboid(8.0, 16.0), // A little rectangle under the player
+                ShapeCastOptions {
+                    stop_at_penetration: false,
+                    ..default()
+                },
+                QueryFilter::default(),
+            ) {
+                if toi.time_of_impact > 10.0 && velocity.linvel.y < -1.0 {
+                    *drill_state = Falling;
+                }
             }
         }
     }
@@ -489,7 +492,7 @@ fn death_detection(
     mut next_state: ResMut<NextState<GameState>>,
     mut next_menu_state: ResMut<NextState<MenuState>>,
 ) {
-    if let Ok((health, fuel)) = player.get_single() {
+    if let Ok((health, fuel)) = player.single() {
         if health.current <= 0.0 || fuel.current <= 0.0 {
             next_menu_state.set(GameOver);
             next_state.set(GameState::Menu);

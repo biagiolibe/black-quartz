@@ -2,10 +2,9 @@ use crate::map::TileType::Solid;
 use crate::prelude::GameState::Playing;
 use crate::prelude::GameSystems::{Rendering, Running};
 use crate::prelude::TileType::*;
-use crate::prelude::{FieldOfView, GameState, Item, LoadingProgress, Player};
+use crate::prelude::{FieldOfView, FovMaterial, GameState, Item, LoadingProgress, Player};
 use crate::resource::GameAssets;
 use bevy::prelude::*;
-use bevy::utils::info;
 use bevy_rapier2d::prelude::{ActiveEvents, Collider, RigidBody};
 use noise::{NoiseFn, Perlin};
 use rand::Rng;
@@ -247,7 +246,7 @@ fn render_map(
 ) {
     //Clear world map from previous run, if any
     for tile_entity in tile_query.iter() {
-        commands.entity(tile_entity).despawn_recursive();
+        commands.entity(tile_entity).despawn();
     }
 
     for x in -GRID_WIDTH / 2..GRID_WIDTH / 2 {
@@ -294,13 +293,58 @@ fn render_map(
         }
     }
 }
+/*
+fn setup_fov_overlay(
+    mut commands: Commands,
+    mut meshes: ResMut<Assets<Mesh>>,
+    mut materials: ResMut<Assets<FovMaterial>>,
+) {
+    let mesh_handle = meshes.add(Mesh::from(Rectangle::default()));
+    let material_handle = materials.add(FovMaterial { alpha: 1.0 });
+
+    commands.spawn((
+        mesh_handle.clone(),
+        material_handle.clone(),
+        Transform {
+            translation: Vec3::ZERO,
+            scale: Vec3::new(300.0, 1.0, 1.0),
+            ..Default::default()
+        },
+        GlobalTransform::default(),
+        MeshMaterial2d(material_handle),
+        Visibility::default(),
+        ..default(),
+    ));
+}
+
+
+
+fn update_fov_overlay_with_shader(
+    mut query: Query<(&mut Transform, &mut Handle<FovMaterial>)>,
+    mut materials: ResMut<Assets<FovMaterial>>,
+    player_query: Query<&Transform, With<Player>>,
+) {
+    let player_transform = player_query.single();
+
+    for (mut transform, material_handle) in query.iter_mut() {
+        transform.translation = player_transform.translation;
+
+        // Ad esempio, cambiare alpha in base a condizioni dinamiche
+        if let Some(material) = materials.get_mut(material_handle) {
+            material.alpha = 0.8; // puoi mappare questo valore a un input di sistema dinamico
+        }
+    }
+}
+
+
+ */
 
 fn update_fov_overlay(
     mut fov_query: Query<&mut FieldOfView, With<Player>>,
     mut query_tiles: Query<(&mut Sprite, &Tile), With<Tile>>,
     mut world_grid: ResMut<WorldGrid>,
 ) {
-    if let Ok(mut fov) = fov_query.get_single_mut() {
+    if let Ok(mut fov) = fov_query.single_mut() {
         if fov.dirty {
             fov.visible_tiles.iter().for_each(|(x, y)| {
                 if !world_grid.revealed_tiles.contains(&(*x, *y)) {
@@ -324,7 +368,7 @@ pub fn update_fov(
     mut player_query: Query<(&Transform, Mut<FieldOfView>), With<Player>>,
     world_grid: ResMut<WorldGrid>,
 ) {
-    if let Ok((player_transform, mut fov)) = player_query.get_single_mut() {
+    if let Ok((player_transform, mut fov)) = player_query.single_mut() {
         let player_pos = IVec2::from(world_to_grid_position(
             player_transform.translation.truncate(),
         ));
