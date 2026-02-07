@@ -4,7 +4,7 @@ use crate::prelude::*;
 use bevy::app::App;
 use bevy::prelude::{
     Commands, Component, Entity, IntoScheduleConfigs, Plugin, Query, Res, Time, Timer, Transform,
-    Update, Vec3, With, debug, info,
+    Update, Vec3, With, debug,
 };
 use rand::Rng;
 

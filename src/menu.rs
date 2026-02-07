@@ -190,7 +190,7 @@ pub fn handle_start_menu(
     visibility_query: Query<&mut Visibility>,
 ) {
     info!("start menu");
-    if let Ok((entity, children)) = menu_query.get_single() {
+    if let Ok((entity, children)) = menu_query.single() {
         set_visibility_recursive(
             Visibility::Visible,
             entity,
@@ -206,7 +206,7 @@ pub fn handle_base_menu(
     visibility_query: Query<&mut Visibility>,
 ) {
     info!("base menu");
-    if let Ok((entity, children)) = menu_query.get_single() {
+    if let Ok((entity, children)) = menu_query.single() {
         set_visibility_recursive(
             Visibility::Visible,
             entity,
@@ -228,16 +228,19 @@ fn handle_button_interaction(
         if *interaction == Pressed {
             match button {
                 Sell => {
-                    if let Ok((mut inventory, _, mut currency)) = player.get_single_mut() {
+                    if let Ok((mut inventory, _, mut currency)) = player.single_mut() {
                         sell_all_inventory(&mut inventory, &mut currency);
                     }
                 }
                 Refill => {
-                    if let Ok((_, mut fuel, mut currency)) = player.get_single_mut() {
+                    if let Ok((_, mut fuel, mut currency)) = player.single_mut() {
                         refill_tank(&mut fuel, &mut currency, &economy);
                     }
                 }
                 NewGame => {
+                    loading_progress.rendering_map = false;
+                    loading_progress.spawning_player = false;
+                    loading_progress.spawning_base = false;
                     next_state.set(GameState::Rendering);
                     next_menu_state.set(MenuState::None);
                 }
@@ -253,7 +256,6 @@ fn handle_button_interaction(
                     next_state.set(GameState::GameOver);
                     next_menu_state.set(MenuState::None);
                 }
-                _ => {}
             }
         }
     }
@@ -312,7 +314,7 @@ pub fn handle_gameover_menu(
     visibility_query: Query<&mut Visibility>,
 ) {
     info!("Game over menu");
-    if let Ok((entity, children)) = menu_query.get_single() {
+    if let Ok((entity, children)) = menu_query.single() {
         set_visibility_recursive(
             Visibility::Visible,
             entity,
@@ -328,7 +330,7 @@ fn cleanup_menu(
     visibility_query: Query<&mut Visibility>,
 ) {
     info!("Cleanup menu");
-    if let Ok((entity, children)) = menu_query.get_single() {
+    if let Ok((entity, children)) = menu_query.single() {
         set_visibility_recursive(Visibility::Hidden, entity, children, None, visibility_query);
     }
 }
@@ -348,7 +350,7 @@ fn set_visibility_recursive(
         .iter()
         .enumerate()
         .filter(|(index, _)| child_index.is_none_or(|idx| *index == idx))
-        .for_each(|(id, entity)| {
+        .for_each(|(_id, entity)| {
             if let Ok(mut visibility) = visibility_query.get_mut(entity) {
                 *visibility = visibility_target;
             };

@@ -1,13 +1,13 @@
-use bevy::ecs::error::info;
 use crate::BlackQuartzCamera;
 use crate::game::GameState::Playing;
 use crate::game::GameSystems::Rendering;
 use crate::map::WorldGrid;
 use crate::prelude::{DrillState, LoadingProgress, Player};
 use bevy::math::Vec2;
-use bevy::prelude::{App, Camera2d, Commands, IntoScheduleConfigs, OrthographicProjection, Plugin, Projection, Query, Res, ResMut, Startup, Transform, Update, With, Without, in_state, info};
-use bevy::render::camera::CameraProjection;
-
+use bevy::prelude::{
+    App, Camera2d, Commands, IntoScheduleConfigs, OrthographicProjection, Plugin, Projection,
+    Query, Res, ResMut, Startup, Transform, Update, With, Without, in_state,
+};
 pub struct CameraPlugin;
 
 impl Plugin for CameraPlugin {
@@ -51,7 +51,6 @@ fn follow_player(
         let player_pos = player_transform.translation;
         if let Ok((mut camera_pos, camera)) = query_camera.single_mut() {
             if let Projection::Orthographic(ortho) = camera {
-                info!("orthographic");
                 let camera_area = ortho.area;
                 if player_pos.x + camera_area.max.x <= world_grid.map_area.max.x
                     && player_pos.x + camera_area.min.x >= world_grid.map_area.min.x

@@ -15,7 +15,7 @@ use bevy_rapier2d::prelude::{
     ReadRapierContext, RigidBody, ShapeCastOptions, Velocity,
 };
 use bevy_rapier2d::rapier::prelude::SharedShape;
-use std::collections::{HashSet, VecDeque};
+use std::collections::HashSet;
 use std::time::Duration;
 
 pub struct PlayerPlugin;
@@ -95,6 +95,7 @@ impl Default for PlayerDirection {
 #[derive(Component)]
 pub struct Health {
     pub current: f32,
+    #[allow(dead_code)]
     pub max: f32,
 }
 impl Default for Health {
@@ -224,12 +225,23 @@ pub fn spawn_player(
     mut loading_progress: ResMut<LoadingProgress>,
 ) {
     if let Ok(entity) = player.single() {
-        commands.entity(entity).despawn_recursive();
+        commands.entity(entity).despawn();
     }
     info!("Spawning Drilling Machine (Player)");
     commands
         .spawn((
             Player,
+            Health::default(),
+            Fuel::default(),
+            Inventory::default(),
+            Currency::default(),
+            FieldOfView::default(),
+            DrillState::default(),
+            PlayerAttributes::default(),
+            PlayerDirection::default(),
+            DrillAnimation::default(),
+        ))
+        .insert((
             Damping {
                 linear_damping: 0.5,
                 angular_damping: 0.5,
@@ -249,8 +261,8 @@ pub fn spawn_player(
             ActiveEvents::COLLISION_EVENTS,
             GravityScale(1.0),
             Velocity::zero(),
-        ))
-        .insert(LockedAxes::ROTATION_LOCKED);
+            LockedAxes::ROTATION_LOCKED,
+        ));
     loading_progress.spawning_player = true;
 }
 pub fn move_player(
@@ -315,7 +327,7 @@ fn update_player_direction(
     keyboard_input: Res<ButtonInput<KeyCode>>,
     mut player_query: Query<(&mut Transform, &mut PlayerDirection, &mut Sprite), With<Player>>,
 ) {
-    if let Ok((mut transform, mut direction, mut sprite)) = player_query.single_mut() {
+    if let Ok((_transform, mut direction, mut sprite)) = player_query.single_mut() {
         // Controlla input orizzontale
         if keyboard_input.pressed(KeyCode::ArrowLeft) {
             if *direction != PlayerDirection::Left {
@@ -445,7 +457,7 @@ fn collision_detection(
                             "Player collision detected, impact speed {:?}, damage {:?}, player integrity {:?}",
                             impact_speed, damage_amount, health.current
                         );
-                        for (entity) in camera.iter_mut() {
+                        for entity in camera.iter_mut() {
                             commands.entity(entity).insert(CameraShake {
                                 base_position: None,
                                 timer: Timer::new(Duration::from_secs_f32(0.1), TimerMode::Once),

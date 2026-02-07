@@ -2,7 +2,7 @@ use crate::map::TileType::Solid;
 use crate::prelude::GameState::Playing;
 use crate::prelude::GameSystems::{Rendering, Running};
 use crate::prelude::TileType::*;
-use crate::prelude::{FieldOfView, FovMaterial, GameState, Item, LoadingProgress, Player};
+use crate::prelude::{FieldOfView, GameState, Item, LoadingProgress, Player};
 use crate::resource::GameAssets;
 use bevy::prelude::*;
 use bevy_rapier2d::prelude::{ActiveEvents, Collider, RigidBody};
@@ -80,6 +80,7 @@ pub struct WorldGrid {
     pub map_area: Rect,
 }
 #[derive(Component, Clone, Copy, PartialEq)]
+#[allow(dead_code)]
 pub struct FovOverlay;
 
 /// This plugin handles map related stuff

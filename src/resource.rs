@@ -37,7 +37,8 @@ pub struct AssetTexture {
 }
 
 #[derive(AsBindGroup, Debug, Clone, Asset, TypePath, Component)]
-pub struct FovMaterial{
+#[allow(dead_code)]
+pub struct FovMaterial {
     #[uniform(0)]
     // campo dummy, ad esempio un float trasparenza, usato anche per default
     pub alpha: f32,

@@ -93,5 +93,5 @@ impl Plugin for GamePlugin {
 }
 
 fn exit_game(mut exit: EventWriter<AppExit>) {
-    exit.send(AppExit::Success);
+    exit.write(AppExit::Success);
 }

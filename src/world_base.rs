@@ -1,10 +1,9 @@
 use std::ops::Mul;
 use crate::game::GameState;
-use crate::game::GameSystems::Running;
 use crate::map::TILE_SIZE;
 use crate::player::Player;
 use crate::prelude::GameState::Playing;
-use crate::prelude::GameSystems::{Rendering, Ui};
+use crate::prelude::GameSystems::Ui;
 use crate::prelude::{GameAssets, Inventory, LoadingProgress, MenuState};
 use bevy::prelude::*;
 use bevy_rapier2d::pipeline::CollisionEvent;
