@@ -31,7 +31,7 @@ impl Default for PlayerAttributes {
         Self {
             drill_power: 1.0,
             damage_factor: 0.05,
-            armor_resistance: 1.0,
+            armor_resistance: 0.0,
             ground_speed_factor: 200.0,
             flying_speed_factor: 200.0,
             fuel_efficiency: 0.3,

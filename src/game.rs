@@ -33,6 +33,10 @@ pub enum GameState {
 pub struct EconomyConfig {
     pub fuel_price_per_unit: u32,
     pub fuel_refill_amount: f32,
+    pub upgrade_drill_cost: u32,
+    pub upgrade_speed_cost: u32,
+    pub upgrade_tank_cost: u32,
+    pub upgrade_armor_cost: u32,
 }
 
 impl Default for EconomyConfig {
@@ -40,6 +44,10 @@ impl Default for EconomyConfig {
         EconomyConfig {
             fuel_price_per_unit: 2,
             fuel_refill_amount: 100.0,
+            upgrade_drill_cost: 80,
+            upgrade_speed_cost: 60,
+            upgrade_tank_cost: 100,
+            upgrade_armor_cost: 70,
         }
     }
 }

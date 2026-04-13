@@ -46,7 +46,7 @@ pub fn initialize_world_grid(mut commands: Commands) {
 }
 
 fn distribute_materials(tiles: &mut Vec<Vec<TileType>>) -> Vec<Vec<TileType>> {
-    let perlin = Perlin::new(0);
+    let perlin = Perlin::new(rand::thread_rng().gen());
     let mut materialized_tiles = tiles.clone();
 
     for y in 0..GRID_HEIGHT as usize {

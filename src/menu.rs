@@ -1,4 +1,4 @@
-use crate::prelude::MenuButton::{NewGame, QuitGame, Refill, Resume, Sell};
+use crate::prelude::MenuButton::{NewGame, QuitGame, Refill, Resume, Sell, UpgradeDrill, UpgradeSpeed, UpgradeTank, UpgradeArmor};
 use crate::prelude::*;
 use bevy::prelude::*;
 use bevy::ui::Interaction::Pressed;
@@ -22,6 +22,10 @@ pub enum MenuButton {
     Resume,
     NewGame,
     QuitGame,
+    UpgradeDrill,
+    UpgradeSpeed,
+    UpgradeTank,
+    UpgradeArmor,
 }
 
 impl Plugin for MenuPlugin {
@@ -154,6 +158,34 @@ pub fn init_menu(mut commands: Commands, assets_server: Res<AssetServer>) {
                             TextColor(Color::WHITE),
                         ));
                     });
+                    popup.spawn((Button, UpgradeDrill)).with_children(|button| {
+                        button.spawn((
+                            Text::new("Upgrade Drill (80c)"),
+                            font_style.clone(),
+                            TextColor(Color::WHITE),
+                        ));
+                    });
+                    popup.spawn((Button, UpgradeSpeed)).with_children(|button| {
+                        button.spawn((
+                            Text::new("Upgrade Speed (60c)"),
+                            font_style.clone(),
+                            TextColor(Color::WHITE),
+                        ));
+                    });
+                    popup.spawn((Button, UpgradeTank)).with_children(|button| {
+                        button.spawn((
+                            Text::new("Upgrade Tank (100c)"),
+                            font_style.clone(),
+                            TextColor(Color::WHITE),
+                        ));
+                    });
+                    popup.spawn((Button, UpgradeArmor)).with_children(|button| {
+                        button.spawn((
+                            Text::new("Upgrade Armor (70c)"),
+                            font_style.clone(),
+                            TextColor(Color::WHITE),
+                        ));
+                    });
                 });
             // Game over menu [index-2]
             parent
@@ -218,7 +250,7 @@ pub fn handle_base_menu(
 }
 fn handle_button_interaction(
     interaction: Query<(&Interaction, &MenuButton), (Changed<Interaction>, With<Button>)>,
-    mut player: Query<(&mut Inventory, &mut Fuel, &mut Currency), With<Player>>,
+    mut player: Query<(&mut Inventory, &mut Fuel, &mut Currency, &mut PlayerAttributes), With<Player>>,
     mut next_state: ResMut<NextState<GameState>>,
     economy: Res<EconomyConfig>,
     mut loading_progress: ResMut<LoadingProgress>,
@@ -228,13 +260,56 @@ fn handle_button_interaction(
         if *interaction == Pressed {
             match button {
                 Sell => {
-                    if let Ok((mut inventory, _, mut currency)) = player.single_mut() {
+                    if let Ok((mut inventory, _, mut currency, _)) = player.single_mut() {
                         sell_all_inventory(&mut inventory, &mut currency);
                     }
                 }
                 Refill => {
-                    if let Ok((_, mut fuel, mut currency)) = player.single_mut() {
+                    if let Ok((_, mut fuel, mut currency, _)) = player.single_mut() {
                         refill_tank(&mut fuel, &mut currency, &economy);
+                    }
+                }
+                UpgradeDrill => {
+                    if let Ok((_, _, mut currency, mut attributes)) = player.single_mut() {
+                        if currency.amount >= economy.upgrade_drill_cost {
+                            currency.amount -= economy.upgrade_drill_cost;
+                            attributes.drill_power += 0.5;
+                            info!("Upgraded drill power to {:.1}", attributes.drill_power);
+                        }
+                    }
+                }
+                UpgradeSpeed => {
+                    if let Ok((_, _, mut currency, mut attributes)) = player.single_mut() {
+                        if currency.amount >= economy.upgrade_speed_cost {
+                            currency.amount -= economy.upgrade_speed_cost;
+                            attributes.ground_speed_factor += 20.0;
+                            attributes.flying_speed_factor += 20.0;
+                            info!(
+                                "Upgraded speed to {:.1}",
+                                attributes.ground_speed_factor
+                            );
+                        }
+                    }
+                }
+                UpgradeTank => {
+                    if let Ok((_, mut fuel, mut currency, _)) = player.single_mut() {
+                        if currency.amount >= economy.upgrade_tank_cost {
+                            currency.amount -= economy.upgrade_tank_cost;
+                            fuel.max += 50.0;
+                            info!("Upgraded tank to {:.1}", fuel.max);
+                        }
+                    }
+                }
+                UpgradeArmor => {
+                    if let Ok((_, _, mut currency, mut attributes)) = player.single_mut() {
+                        if currency.amount >= economy.upgrade_armor_cost {
+                            currency.amount -= economy.upgrade_armor_cost;
+                            attributes.armor_resistance += 0.1;
+                            info!(
+                                "Upgraded armor resistance to {:.2}",
+                                attributes.armor_resistance
+                            );
+                        }
                     }
                 }
                 NewGame => {

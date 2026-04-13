@@ -36,6 +36,9 @@ struct HudInventoryText;
 #[derive(Component)]
 struct HudCurrencyText;
 
+#[derive(Component)]
+struct HudFuelBar;
+
 impl Plugin for HUDPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(OnEnter(Rendering), init_hud)
@@ -105,6 +108,27 @@ fn init_hud(
                 },
                 HudIntegrity,
             ));
+            // Fuel bar
+            hud_children
+                .spawn((
+                    Node {
+                        width: Val::Px(100.0),
+                        height: Val::Px(16.0),
+                        margin: UiRect::left(Val::Px(10.0)),
+                        ..default()
+                    },
+                    BackgroundColor(Color::srgb(0.2, 0.2, 0.2)),
+                ))
+                .with_child((
+                    Node {
+                        width: Val::Percent(100.0),
+                        height: Val::Percent(100.0),
+                        ..default()
+                    },
+                    BackgroundColor(Color::srgb(1.0, 0.6, 0.0)),
+                    HudFuelBar,
+                ));
+
             // Depth stat
             hud_children
                 .spawn((
@@ -140,6 +164,7 @@ fn init_hud(
 
 fn update_hud(
     mut hud_integrity: Query<(Entity, &mut ImageNode), With<HudIntegrity>>,
+    mut hud_fuel_bar: Query<&mut Node, With<HudFuelBar>>,
     hud_depth_text: Query<Entity, With<HudDepthText>>,
     hud_fuel_text: Query<Entity, With<HudFuelText>>,
     hud_inventory_text: Query<Entity, With<HudInventoryText>>,
@@ -157,10 +182,16 @@ fn update_hud(
             let health = player_stats.0;
 
             // texture index on the base of health level
-            let health_level_index = 10 - (health.current / 10.0).round() as usize;
+            let health_ratio = (health.current / health.max).clamp(0.0, 1.0);
+            let health_level_index = ((1.0 - health_ratio) * 10.0).round() as usize;
             if let Some(texture_atlas) = &mut image_node.texture_atlas {
                 texture_atlas.index = health_level_index;
             };
+        }
+        if let Ok(mut fuel_bar_node) = hud_fuel_bar.single_mut() {
+            let fuel = player_stats.2;
+            let fuel_percentage = (fuel.current / fuel.max * 100.0).clamp(0.0, 100.0);
+            fuel_bar_node.width = Val::Percent(fuel_percentage);
         }
         if let Ok(depth_text_entity) = hud_depth_text.single() {
             let position = world_to_grid_position(player_stats.1.translation.truncate());

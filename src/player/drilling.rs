@@ -14,6 +14,7 @@ pub fn drill(
             &Transform,
             &mut DrillState,
             &PlayerAttributes,
+            &mut Fuel,
         ),
         With<Player>,
     >,
@@ -21,7 +22,7 @@ pub fn drill(
     mut query_tile: Query<(&mut Tile, &Transform), With<Tile>>,
     mut tile_destroyed_events: EventWriter<TileDestroyedEvent>,
 ) {
-    if let Ok((transform, mut drill_state, attributes)) = player.single_mut() {
+    if let Ok((transform, mut drill_state, attributes, mut fuel)) = player.single_mut() {
         let position = transform.translation.truncate();
         let current_position = world_to_grid_position(position);
 
@@ -46,6 +47,7 @@ pub fn drill(
 
                     tile.drilling.integrity -=
                         attributes.drill_power * time.delta_secs() * (1.0 - tile.drilling.hardness);
+                    fuel.current -= (1.0 / attributes.fuel_efficiency) * time.delta_secs();
                     if tile.drilling.integrity <= 0.0 {
                         tile_destroyed_events.write(TileDestroyedEvent {
                             tile_type: tile.tile_type,
@@ -129,14 +131,16 @@ pub fn collision_detection(
 
 pub fn apply_impact_damage(
     mut events: EventReader<PlayerImpactEvent>,
-    mut player: Query<&mut Health, With<Player>>,
+    mut player: Query<(&mut Health, &PlayerAttributes), With<Player>>,
 ) {
-    if let Ok(mut health) = player.single_mut() {
+    if let Ok((mut health, attributes)) = player.single_mut() {
         for event in events.read() {
-            health.current -= event.damage;
+            let damage_reduction = (1.0 - attributes.armor_resistance.min(0.9)).max(0.1);
+            let actual_damage = event.damage * damage_reduction;
+            health.current -= actual_damage;
             info!(
-                "Player impact: speed={:.1}, damage={:.1}, health={:.1}",
-                event.impact_speed, event.damage, health.current
+                "Player impact: speed={:.1}, damage={:.1} (reduced to {:.1}), health={:.1}",
+                event.impact_speed, event.damage, actual_damage, health.current
             );
         }
     }
