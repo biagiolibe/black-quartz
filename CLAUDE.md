@@ -51,15 +51,45 @@ Systems run in chained `GameSystems` sets on `Update`:
 
 ### Player
 
-Components: `Health`, `Fuel`, `Inventory`, `Currency`, `DrillState` (Idle/Flying/Drilling/Falling).
+Components: `Health`, `Fuel`, `Inventory`, `Currency`, `DrillState` (Idle/Flying/Drilling/Falling), `PlayerAttributes` (drill_power, armor_resistance=0.0, ground_speed_factor, flying_speed_factor, fuel_efficiency).
 Physics: `RigidBody::Dynamic`, capsule collider, rotation locked, Rapier raycasts for falling detection.
 
-## WIP: module refactoring (branch `update-bevy`)
+## Module structure
 
-`src/map.rs` and `src/player.rs` were **deleted** and replaced with empty `src/map/` and `src/player/` directories as part of a planned split into submodules. The directories currently have no `mod.rs` — **the project does not compile** until they are filled.
+`main.rs` defines an inline `prelude` module with wildcard re-exports from all submodules. All files use `use crate::prelude::*` to access cross-module types.
 
-Planned submodules:
-- `map/`: `mod.rs`, `components.rs`, `generation.rs`, `fov.rs`, `events.rs`
-- `player/`: `mod.rs`, `components.rs`, `movement.rs`, `drilling.rs`
+**Submodules**:
+- `src/map/`: `components.rs` (Tile, WorldGrid, constants, helper functions), `generation.rs` (procedural generation), `fov.rs` (field of view algorithm)
+- `src/player/`: `components.rs` (Health, Fuel, Inventory, Currency, PlayerAttributes, DrillState), `movement.rs` (keyboard input, velocity), `drilling.rs` (drill system, collision, impact)
+- `src/animation.rs` — sprite animation and camera shake
+- `src/camera.rs` — camera follow with lerp smoothing
+- `src/hud.rs` — UI health/fuel/inventory/depth display
+- `src/menu.rs` — start/pause/game-over menus
+- `src/resource.rs` — asset loading and TextureAtlas definitions
+- `src/world_base.rs` — base entity and collision trigger
 
-See `implementation_plan.md` for the full refactoring spec (written in Italian).
+---
+
+## Bevy 0.16 API conventions
+
+- **Queries**: `query.single()` / `query.single_mut()` — NOT `get_single()` (renamed in 0.16)
+- **Events**: `events.write(event)` — NOT `events.send()` (renamed in 0.16)
+- **Reactivity**: `Changed<T>` in query filters for systems that only run when T was modified
+- **UI text**: Use `TextUiWriter` to modify text content and spans in HUD systems
+- **TextureAtlas**: Use `ImageNode::from_atlas_image(texture, atlas)` for sprite selection
+
+---
+
+## Development workflow
+
+The project uses the **MERIDIAN** system (`MERIDIAN/WORKFLOW_GUIDE.md`) for structured task management:
+
+| File | Purpose |
+|------|---------|
+| `DEVELOPMENT_PLAN.md` | Feature backlog (proposals → approved → completed) organized by category |
+| `tasks/QUEUE.md` | Execution queue with priority levels (🔴 P1 / 🟡 P2 / 🟢 P3) |
+| `tasks/NNN-name.md` | Detailed task briefings with context for agent delegation |
+| `tasks/_TEMPLATE.md` | Template for creating new task files |
+| `tasks/done/` | Archive of completed task files |
+
+When starting a new feature: (1) add to `DEVELOPMENT_PLAN.md`, (2) create a task file if complex, (3) add to `QUEUE.md` with priority, (4) delegate to an agent via task file.
