@@ -97,13 +97,12 @@ Formato del riferimento: `→ tasks/<id>.md`
 ### 🖥️ HUD & Interfaccia
 
 - `[ ]` Collegare correttamente `Inventory` all'HUD (mostrare lista item, non solo count)
-- `[ ]` **H1** — Aggiungere barra visiva per il carburante (stile progress bar)
-- `[ ]` **H3** — Mostrare avviso visivo quando carburante scende sotto il 20% *(abbinato a G3)*
+- `[ ]` **H3** — Avviso visivo carburante sotto il 20% *(abbinato a task 005)*
+- `[ ]` **H5** — Miglioramenti visivi menu e HUD (bottoni, inventario, stile) → `tasks/010-ui-improvements.md`
 
 ### 🎬 Animazioni & Camera
 
-- `[ ]` **AN2** — Animare la distruzione del blocco (breve flash o variazione sprite)
-- `[ ]` **AN3** — Smoothing della camera: interpolazione su più frame invece di snap diretto
+- `[ ]` **AN2** — Animare la distruzione del blocco (breve flash o variazione sprite) → `tasks/008-tile-destroy-animation.md`
 
 ### 💰 Economia
 
@@ -177,6 +176,13 @@ Formato del riferimento: `→ tasks/<id>.md`
 - `[x]` Animare l'idle della trivella con TextureAtlas
 - `[x]` Implementare `CameraShake` con timer e intensità
 - `[x]` Aggiungere sistema `handle_camera_shake` collegato a `PlayerImpactEvent`
+- `[x]` **AN3** — Smoothing camera già implementato con `FloatExt::lerp` in `camera.rs`
+
+### 🖥️ HUD & Interfaccia
+
+- `[x]` **H1** — Barra visiva carburante già implementata in `hud.rs` (componente `HudFuelBar`)
+- `[x]` Fix sprite integrità HUD: formula indice aggiornata con `health.max` + clamp (riga ~185)
+- `[x]` Fix `armor_resistance` default: 1.0 → 0.0 in `PlayerAttributes` (player non prendeva danno di default)
 
 ---
 

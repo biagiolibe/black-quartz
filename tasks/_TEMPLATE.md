@@ -2,9 +2,10 @@
 
 > **ID**: `XXX`
 > **Categoria**: Architettura / Mappa / Giocatore / HUD / Audio / etc.
-> **Priorità**: Alta / Media / Bassa
+> **Priorità**: 🔴 P1 / 🟡 P2 / 🟢 P3
 > **Stima**: ~1h / ~2h / mezza giornata
-> **Assegnato a**: *(agente / nome)*
+> **Assegnato a**: *(Antigravity / Claude CLI / non assegnato)*
+> **Sessione**: *(ID conversazione o descrizione sessione, es. "Antigravity conv. 9d6957d8")*
 
 ---
 
@@ -56,7 +57,8 @@ Passi concreti o pseudo-codice per guidare l'implementazione.
 
 - Non rompere la compilazione (il progetto deve restare compilabile a ogni step)
 - Non introdurre dipendenze esterne senza approvazione
-- Eventuali note specifiche sul progetto (es. "non usare `get_single`, usa `single`" in Bevy 0.16)
+- Bevy 0.16: usare `single()` / `single_mut()` (non `get_single`), `write()` (non `send()`)
+- Eventuali note specifiche sul progetto
 
 ---
 
@@ -64,3 +66,29 @@ Passi concreti o pseudo-codice per guidare l'implementazione.
 
 - Dipende da: *(altri task ID o nessuno)*
 - Blocca: *(altri task ID o nessuno)*
+
+---
+
+## 🤖 Come delegare questo task a un agente
+
+### Opzione A — Antigravity (nuova conversazione)
+
+Apri una nuova chat e scrivi come primo messaggio:
+
+```
+Leggi il file `/Users/biagioliberto/dev/src/biagiolibe/black-quartz/tasks/XXX-nome-task.md`
+ed esegui il task descritto. Il progetto è in `/Users/biagioliberto/dev/src/biagiolibe/black-quartz/`.
+```
+
+### Opzione B — Claude CLI (terminale)
+
+```bash
+cd /Users/biagioliberto/dev/src/biagiolibe/black-quartz
+claude "$(cat tasks/XXX-nome-task.md)"$'\n\nEsegui questo task nel progetto corrente.'
+```
+
+### Dopo la delega
+
+1. Aggiorna `Assegnato a` e `Sessione` in questo file
+2. Cambia stato in `QUEUE.md`: `[ ]` → `[/]`
+3. Al completamento: `mv tasks/XXX-nome-task.md tasks/done/` e aggiorna `QUEUE.md`
