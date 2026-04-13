@@ -7,10 +7,10 @@ Questo documento tecnico descrive l'architettura, i componenti principali e le m
 
 ### Stack Tecnologico
 - **Linguaggio**: Rust (edizione 2021)
-- **Game Engine**: Bevy (0.17)
+- **Game Engine**: Bevy (0.16)
   - Modelli di programmazione: ECS (Entity-Component-System)
   - Finestre e Rendering standard di Bevy
-- **Fisica**: `bevy_rapier2d` (0.25.0) per la collisione e dinamica dei corpi rigidi (gravità, urti)
+- **Fisica**: `bevy_rapier2d` (0.31.0) per la collisione e dinamica dei corpi rigidi (gravità, urti)
 - **Generazione Procedurale**: `noise` (0.9.0) e `rand` per la generazione della mappa e distribuzione dei minerali.
 
 ---
