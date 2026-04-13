@@ -76,6 +76,13 @@ pub struct WorldGrid {
 #[allow(dead_code)]
 pub struct FovOverlay;
 
+#[derive(Event)]
+pub struct TileDestroyedEvent {
+    pub tile_type: TileType,
+    pub position: (i32, i32),
+    pub entity: Entity,
+}
+
 pub fn world_to_grid_position(world_position: Vec2) -> (i32, i32) {
     (
         ((world_position.x + (world_position.x / world_position.x.abs()) * TILE_SIZE / 2.0)

@@ -51,6 +51,12 @@ impl Default for PlayerDirection {
     }
 }
 
+#[derive(Event)]
+pub struct PlayerImpactEvent {
+    pub impact_speed: f32,
+    pub damage: f32,
+}
+
 #[derive(Component)]
 pub struct Health {
     pub current: f32,

@@ -1,11 +1,13 @@
 use crate::BlackQuartzCamera;
 use crate::game::GameSystems::Animation;
 use crate::prelude::*;
+use crate::player::PlayerImpactEvent;
 use bevy::app::App;
 use bevy::prelude::{
-    Commands, Component, Entity, IntoScheduleConfigs, Plugin, Query, Res, Time, Timer, Transform,
-    Update, Vec3, With, debug,
+    Commands, Component, Entity, EventReader, IntoScheduleConfigs, Plugin, Query, Res, Time,
+    Timer, TimerMode, Transform, Update, Vec3, With, debug,
 };
+use std::time::Duration;
 use rand::Rng;
 
 pub struct GameAnimationPlugin;
@@ -13,7 +15,8 @@ pub struct GameAnimationPlugin;
 impl Plugin for GameAnimationPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(Update, animate_drilling.in_set(Animation))
-            .add_systems(Update, animate_camera.in_set(Animation));
+            .add_systems(Update, animate_camera.in_set(Animation))
+            .add_systems(Update, handle_camera_shake.in_set(Animation));
     }
 }
 
@@ -56,6 +59,22 @@ pub struct CameraShake {
     pub base_position: Option<Vec3>,
     pub intensity: f32,
     pub timer: Timer,
+}
+
+fn handle_camera_shake(
+    mut commands: Commands,
+    mut events: EventReader<PlayerImpactEvent>,
+    camera: Query<Entity, With<BlackQuartzCamera>>,
+) {
+    for _ in events.read() {
+        for entity in camera.iter() {
+            commands.entity(entity).insert(CameraShake {
+                base_position: None,
+                timer: Timer::new(Duration::from_secs_f32(0.1), TimerMode::Once),
+                intensity: 3.0,
+            });
+        }
+    }
 }
 
 fn animate_drilling(

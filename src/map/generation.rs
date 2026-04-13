@@ -1,6 +1,6 @@
 use crate::map::components::{
     Drilling, FILL_PROBABILITY, GRID_HEIGHT, GRID_WIDTH, SIMULATION_STEPS, TILE_SIZE,
-    Tile, TileType, WorldGrid,
+    Tile, TileDestroyedEvent, TileType, WorldGrid, world_grid_position_to_idx,
 };
 use crate::prelude::{GameAssets, LoadingProgress};
 use bevy::prelude::*;
@@ -259,6 +259,19 @@ fn get_tile_to_render(tile_type: &TileType) -> (Tile, usize) {
             },
             0,
         ),
+    }
+}
+
+pub fn handle_tile_destroyed(
+    mut commands: Commands,
+    mut events: EventReader<TileDestroyedEvent>,
+    mut world_grid: ResMut<WorldGrid>,
+) {
+    for event in events.read() {
+        commands.entity(event.entity).despawn();
+        world_grid.grid.remove(&event.position);
+        let grid_id = world_grid_position_to_idx(event.position);
+        world_grid.tiles[grid_id.1][grid_id.0] = TileType::Empty;
     }
 }
 
